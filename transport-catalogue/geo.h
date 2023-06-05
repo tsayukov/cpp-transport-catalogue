@@ -41,4 +41,4 @@ inline Meter ComputeDistance(Coordinates from, Coordinates to) noexcept {
                                   + cos(AsRad(from.lat)) * cos(AsRad(to.lat)) * cos(AsRad(abs(from.lng - to.lng))));
 }
 
-} // namespace transport_catalogue
+} // namespace transport_catalogue::geo
