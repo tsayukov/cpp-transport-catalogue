@@ -18,8 +18,17 @@ void TransportCatalogue::AddBus(Bus bus) {
     const Bus* bus_ptr = &buses_.back();
     bus_indices_.emplace(bus_ptr->name, bus_ptr);
 
-    for (const Stop* stop : bus_ptr->stops) {
-        stop_statistics_[stop].buses.emplace_back(bus_ptr);
+    for (const Stop* stop_ptr : bus_ptr->stops) {
+        auto iter = stop_statistics_.find(stop_ptr);
+        if (iter != stop_statistics_.end()) {
+            iter->second.buses.value().emplace_back(bus_ptr);
+        } else {
+            StopInfo stop_info;
+            stop_info.stop_name = stop_ptr->name;
+            stop_info.buses = StopInfo::Buses();
+            stop_info.buses.value().emplace_back(bus_ptr);
+            stop_statistics_.emplace(stop_ptr, std::move(stop_info));
+        }
     }
 }
 
@@ -72,16 +81,22 @@ std::optional<geo::Meter> TransportCatalogue::GetDistance(std::string_view stop_
 TransportCatalogue::StopInfo TransportCatalogue::GetStopInfo(std::string_view stop_name) const {
     const auto stop = FindStopBy(stop_name);
     if (!stop.has_value()) {
-        return { stop_name, std::nullopt };
+        StopInfo stop_info;
+        stop_info.stop_name = stop_name;
+        stop_info.buses = std::nullopt;
+        return stop_info;
     }
 
     auto iter_stop_stat = stop_statistics_.find(stop.value());
     if (iter_stop_stat == stop_statistics_.end()) {
-        return { stop.value()->name, std::vector<const Bus*>() };
+        StopInfo stop_info;
+        stop_info.stop_name = stop.value()->name;
+        stop_info.buses = StopInfo::Buses();
+        return stop_info;
     }
 
-    auto& stats = iter_stop_stat->second;
-    auto& buses = stats.buses;
+    StopInfo& stop_info = iter_stop_stat->second;
+    auto& buses = stop_info.buses.value();
     if (!iter_stop_stat->second.is_buses_unique_and_ordered) {
         std::sort(buses.begin(), buses.end(), [](const Bus* lhs, const Bus* rhs) noexcept {
                 return lhs->name < rhs->name;
@@ -90,9 +105,9 @@ TransportCatalogue::StopInfo TransportCatalogue::GetStopInfo(std::string_view st
                 return lhs->name == rhs->name;
         });
         buses.erase(begin_to_remove, buses.end());
-        stats.is_buses_unique_and_ordered = true;
+        stop_info.is_buses_unique_and_ordered = true;
     }
-    return { stop.value()->name, std::make_optional(buses) };
+    return stop_info;
 }
 
 [[nodiscard]] TransportCatalogue::BusInfo TransportCatalogue::GetBusInfo(std::string_view bus_name) const {
@@ -102,10 +117,10 @@ TransportCatalogue::StopInfo TransportCatalogue::GetStopInfo(std::string_view st
     }
 
     auto iter_bus_stat = bus_statistics_.find(bus.value());
-    const auto stats = (iter_bus_stat == bus_statistics_.end())
-                     ? ComputeBusStatistics(bus.value())
-                     : iter_bus_stat->second;
-    return { bus.value()->name, stats };
+    const BusInfo& bus_info = (iter_bus_stat == bus_statistics_.end())
+                            ? ComputeBusStatistics(bus.value())
+                            : iter_bus_stat->second;
+    return bus_info;
 }
 
 namespace details {
@@ -127,14 +142,15 @@ struct KahanFloatingPointAddition {
 
 }
 
-const Bus::Statistics& TransportCatalogue::ComputeBusStatistics(const Bus* bus_ptr) const {
+const TransportCatalogue::BusInfo& TransportCatalogue::ComputeBusStatistics(const Bus* bus_ptr) const {
     assert(bus_ptr != nullptr);
 
     constexpr unsigned int stops_buses_factor = 2;
 
-    auto [iter, _] = bus_statistics_.emplace(bus_ptr, Bus::Statistics());
     const Bus& bus = *bus_ptr;
-    Bus::Statistics& stats = iter->second;
+    auto [iter, _] = bus_statistics_.emplace(bus_ptr, BusInfo{ bus.name, std::make_optional(BusInfo::Statistics{}) });
+    BusInfo& bus_info = iter->second;
+    BusInfo::Statistics& stats = bus_info.statistics.value();
 
     std::unordered_set<const Stop*> unique_stops;
     unique_stops.reserve(stats.stops_count / stops_buses_factor);
@@ -154,7 +170,7 @@ const Bus::Statistics& TransportCatalogue::ComputeBusStatistics(const Bus* bus_p
 
     stats.stops_count = bus.stops.size();
     stats.unique_stops_count = unique_stops.size();
-    return stats;
+    return bus_info;
 }
 
 // Distance

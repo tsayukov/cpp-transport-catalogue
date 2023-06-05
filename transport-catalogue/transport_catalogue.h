@@ -19,28 +19,17 @@ struct Bus;
 struct Stop {
     std::string name;
     geo::Coordinates coordinates;
-
-    struct Statistics {
-        std::vector<const Bus*> buses;
-        bool is_buses_unique_and_ordered = false;
-    };
 };
 
 struct Bus {
     std::string name;
     std::vector<const Stop*> stops;
-
-    struct Statistics {
-        unsigned int stops_count;
-        unsigned int unique_stops_count;
-        geo::Meter route_length;
-        geo::Meter geo_length;
-    };
 };
 
 class TransportCatalogue {
 public:
     void AddStop(Stop stop);
+
     void AddBus(Bus bus);
 
     void SetDistance(std::string_view stop_name_from, std::string_view stop_name_to, geo::Meter distance);
@@ -53,15 +42,28 @@ public:
     // Statistics
 
     struct StopInfo {
+    public:
+        using Buses = std::vector<const Bus*>;
+
         std::string_view stop_name;
-        std::optional<std::vector<const Bus*>> buses;
+        std::optional<Buses> buses;
+    private:
+        friend TransportCatalogue;
+        bool is_buses_unique_and_ordered = false;
     };
 
     [[nodiscard]] StopInfo GetStopInfo(std::string_view stop_name) const;
 
     struct BusInfo {
+        struct Statistics {
+            unsigned int stops_count;
+            unsigned int unique_stops_count;
+            geo::Meter route_length;
+            geo::Meter geo_length;
+        };
+
         std::string_view bus_name;
-        std::optional<Bus::Statistics> statistics;
+        std::optional<Statistics> statistics;
     };
 
     [[nodiscard]] BusInfo GetBusInfo(std::string_view bus_name) const;
@@ -78,10 +80,10 @@ private:
 
     // Statistics
 
-    mutable std::unordered_map<const Stop*, Stop::Statistics> stop_statistics_;
-    mutable std::unordered_map<const Bus*, Bus::Statistics> bus_statistics_;
+    mutable std::unordered_map<const Stop*, StopInfo> stop_statistics_;
+    mutable std::unordered_map<const Bus*, BusInfo> bus_statistics_;
 
-    const Bus::Statistics& ComputeBusStatistics(const Bus* bus_ptr) const;
+    const BusInfo& ComputeBusStatistics(const Bus* bus_ptr) const;
 
     // Distance
 
