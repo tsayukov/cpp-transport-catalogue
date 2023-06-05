@@ -56,6 +56,12 @@ std::vector<query::Any> ReadQueries(Input& input, unsigned int query_count = std
     return queries;
 }
 
+[[nodiscard]] inline std::vector<query::Any> GetAllQueries(std::istream& input) {
+    unsigned int query_count;
+    input >> query_count >> std::ws;
+    return ReadQueries(input, query_count);
+}
+
 namespace tests {
 
 inline void TestReadQuery();
