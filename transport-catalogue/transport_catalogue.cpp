@@ -23,9 +23,7 @@ void TransportCatalogue::AddBus(Bus bus) {
         if (iter != stop_statistics_.end()) {
             iter->second.buses.value().emplace_back(bus_ptr);
         } else {
-            StopInfo stop_info;
-            stop_info.stop_name = stop_ptr->name;
-            stop_info.buses = StopInfo::Buses();
+            StopInfo stop_info(stop_ptr->name, std::make_optional<StopInfo::Buses>());
             stop_info.buses.value().emplace_back(bus_ptr);
             stop_statistics_.emplace(stop_ptr, std::move(stop_info));
         }
@@ -46,7 +44,7 @@ void TransportCatalogue::SetDistance(std::string_view stop_name_from, std::strin
 }
 
 std::optional<geo::Meter> TransportCatalogue::GetDistance(std::string_view stop_name_from,
-                                                     std::string_view stop_name_to) const {
+                                                          std::string_view stop_name_to) const {
     auto iter_from = stop_indices_.find(stop_name_from);
     auto iter_to = stop_indices_.find(stop_name_to);
     if (iter_from == stop_indices_.end() || iter_to == stop_indices_.end()) {
@@ -81,23 +79,17 @@ std::optional<geo::Meter> TransportCatalogue::GetDistance(std::string_view stop_
 TransportCatalogue::StopInfo TransportCatalogue::GetStopInfo(std::string_view stop_name) const {
     const auto stop = FindStopBy(stop_name);
     if (!stop.has_value()) {
-        StopInfo stop_info;
-        stop_info.stop_name = stop_name;
-        stop_info.buses = std::nullopt;
-        return stop_info;
+        return { stop_name, std::nullopt };
     }
 
     auto iter_stop_stat = stop_statistics_.find(stop.value());
     if (iter_stop_stat == stop_statistics_.end()) {
-        StopInfo stop_info;
-        stop_info.stop_name = stop.value()->name;
-        stop_info.buses = StopInfo::Buses();
-        return stop_info;
+        return { stop.value()->name, StopInfo::Buses() };
     }
 
     StopInfo& stop_info = iter_stop_stat->second;
     auto& buses = stop_info.buses.value();
-    if (!iter_stop_stat->second.is_buses_unique_and_ordered) {
+    if (!stop_info.is_buses_unique_and_ordered) {
         std::sort(buses.begin(), buses.end(), [](const Bus* lhs, const Bus* rhs) noexcept {
                 return lhs->name < rhs->name;
         });
@@ -148,7 +140,8 @@ const TransportCatalogue::BusInfo& TransportCatalogue::ComputeBusStatistics(cons
     constexpr unsigned int stops_buses_factor = 2;
 
     const Bus& bus = *bus_ptr;
-    auto [iter, _] = bus_statistics_.emplace(bus_ptr, BusInfo{ bus.name, std::make_optional(BusInfo::Statistics{}) });
+    auto [iter, _] = bus_statistics_.emplace(bus_ptr, BusInfo{ bus.name, std::make_optional<BusInfo::Statistics>() });
+
     BusInfo& bus_info = iter->second;
     BusInfo::Statistics& stats = bus_info.statistics.value();
 

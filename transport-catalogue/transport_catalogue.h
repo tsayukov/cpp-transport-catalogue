@@ -29,7 +29,6 @@ struct Bus {
 class TransportCatalogue {
 public:
     void AddStop(Stop stop);
-
     void AddBus(Bus bus);
 
     void SetDistance(std::string_view stop_name_from, std::string_view stop_name_to, geo::Meter distance);
@@ -47,6 +46,12 @@ public:
 
         std::string_view stop_name;
         std::optional<Buses> buses;
+
+        StopInfo(std::string_view stop_name, std::optional<Buses> buses)
+                : stop_name(stop_name)
+                , buses(std::move(buses)) {
+        }
+
     private:
         friend TransportCatalogue;
         bool is_buses_unique_and_ordered = false;

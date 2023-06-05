@@ -7,7 +7,7 @@ namespace transport_catalogue::query::input {
 
 template<>
 void Process<Tag::StopCreation>(Query<Tag::StopCreation>& query, TransportCatalogue& transport_catalogue) {
-    transport_catalogue.AddStop({std::move(query.stop_name), {query.latitude, query.longitude } });
+    transport_catalogue.AddStop({ std::move(query.stop_name), { query.latitude, query.longitude } });
 }
 
 template<>
@@ -18,7 +18,7 @@ void Process<Tag::StopDistances>(Query<Tag::StopDistances>& query, TransportCata
 }
 
 template<>
-void Process<Tag::BusCreation>(Query<Tag::BusCreation>& query, TransportCatalogue&transport_catalogue) {
+void Process<Tag::BusCreation>(Query<Tag::BusCreation>& query, TransportCatalogue& transport_catalogue) {
     Bus bus;
     bus.name = std::move(query.bus_name);
 
@@ -28,7 +28,7 @@ void Process<Tag::BusCreation>(Query<Tag::BusCreation>& query, TransportCatalogu
     std::transform(
             query.stops.cbegin(), query.stops.cend(),
             std::back_inserter(bus.stops),
-            [transport_catalogue](const auto& stop_name) {
+            [&transport_catalogue](const auto& stop_name) {
                 return transport_catalogue.FindStopBy(stop_name).value();
             });
     if (query.route_view == RouteView::Half) {

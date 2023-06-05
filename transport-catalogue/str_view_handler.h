@@ -84,6 +84,7 @@ std::optional<T> ParseAs(std::string_view text) noexcept {
         text.remove_prefix(1);
     }
     T value;
+    // No way in GCC (C++17)
     auto result = std::from_chars(text.data(), text.data() + text.size(), value);
     if (result.ec == std::errc::invalid_argument || result.ec == std::errc::result_out_of_range) {
         return std::nullopt;

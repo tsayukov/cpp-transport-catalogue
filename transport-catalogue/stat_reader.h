@@ -7,7 +7,6 @@
 #include "transport_catalogue.h"
 
 #include <ostream>
-#include <iomanip>
 
 namespace transport_catalogue::query::output {
 
