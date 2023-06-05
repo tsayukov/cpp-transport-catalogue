@@ -20,6 +20,6 @@ void Process<Tag::StopDistances>(Query<Tag::StopDistances>& query, TransportCata
 template<>
 void Process<Tag::BusCreation>(Query<Tag::BusCreation>& query, TransportCatalogue* transport_catalogue_ptr);
 
-void BulkProcessInput(std::vector<query::Any>& queries, TransportCatalogue* transport_catalogue_ptr);
+void BulkProcess(std::vector<query::Any>& queries, TransportCatalogue* transport_catalogue_ptr);
 
 } // namespace transport_catalogue::query::input
