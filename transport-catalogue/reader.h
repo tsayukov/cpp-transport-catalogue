@@ -56,5 +56,12 @@ std::vector<query::Any> ReadQueries(Input& input, unsigned int query_count = std
     return queries;
 }
 
+namespace tests {
+
+inline void TestReadQuery();
+inline void TestReadQueries();
+
+}
+
 } // namespace transport_catalogue::reader
 

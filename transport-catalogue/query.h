@@ -208,4 +208,12 @@ template<>
     throw std::invalid_argument("No such command '"s + std::string(command) + "'"s);
 }
 
+namespace tests {
+
+inline void TestParseStopCreation();
+inline void TestParseBusCreation();
+inline void TestParseBusInfo();
+
+} // namespace tests
+
 } // namespace transport_catalogue::query

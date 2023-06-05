@@ -1,3 +1,4 @@
+#include "unit_tests.h"
 #include "transport_catalogue.h"
 #include "reader.h"
 #include "input_process.h"
@@ -7,6 +8,8 @@
 
 int main() {
     using namespace transport_catalogue;
+
+    RunAllTests();
 
     unsigned int input_query_count;
     std::cin >> input_query_count >> std::ws;

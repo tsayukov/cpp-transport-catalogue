@@ -91,5 +91,14 @@ std::optional<T> ParseAs(std::string_view text) noexcept {
     return value;
 }
 
+namespace tests {
+
+inline void TestLeftStrip();
+inline void TestRightStrip();
+inline void TestStrip();
+inline void TestSplitView();
+
+} // namespace tests
+
 } // namespace transport_catalogue::str_view_handler
 
