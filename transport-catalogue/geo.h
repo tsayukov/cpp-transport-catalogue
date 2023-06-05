@@ -1,25 +1,44 @@
+/// \file
+/// Functions for working with geographical coordinates
+
 #pragma once
 
 #include <cmath>
 
+namespace transport_catalogue::geo {
+
+using Deg = double;
+using Rad = double;
+using Meter = double;
+
 struct Coordinates {
-    double lat;
-    double lng;
-    bool operator==(const Coordinates& other) const {
+    Deg lat;
+    Deg lng;
+
+    bool operator==(const Coordinates& other) const noexcept {
         return lat == other.lat && lng == other.lng;
     }
-    bool operator!=(const Coordinates& other) const {
+
+    bool operator!=(const Coordinates& other) const noexcept {
         return !(*this == other);
     }
 };
 
-inline double ComputeDistance(Coordinates from, Coordinates to) {
-    using namespace std;
-    if (from == to) {
-        return 0;
-    }
-    static const double dr = 3.1415926535 / 180.;
-    return acos(sin(from.lat * dr) * sin(to.lat * dr)
-                + cos(from.lat * dr) * cos(to.lat * dr) * cos(abs(from.lng - to.lng) * dr))
-        * 6371000;
+inline constexpr Rad AsRad(Deg deg) noexcept {
+    constexpr Rad pi = 3.1415926535;
+    constexpr Rad conversion_factor = pi / 180.0;
+    return deg * conversion_factor;
 }
+
+inline Meter ComputeDistance(Coordinates from, Coordinates to) noexcept {
+    using namespace std;
+
+    if (from == to) {
+        return Meter(0);
+    }
+    constexpr Meter mean_earth_radius = 6371000.0;
+    return mean_earth_radius * acos(sin(AsRad(from.lat)) * sin(AsRad(to.lat))
+                                  + cos(AsRad(from.lat)) * cos(AsRad(to.lat)) * cos(AsRad(abs(from.lng - to.lng))));
+}
+
+} // namespace transport_catalogue
