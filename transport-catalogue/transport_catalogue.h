@@ -18,7 +18,7 @@ struct Bus;
 
 struct Stop {
     std::string name;
-    Coordinates coordinates;
+    geo::Coordinates coordinates;
 
     struct Statistics {
         std::vector<const Bus*> buses;
@@ -33,8 +33,8 @@ struct Bus {
     struct Statistics {
         unsigned int stops_count;
         unsigned int unique_stops_count;
-        Meter route_length;
-        Meter geo_length;
+        geo::Meter route_length;
+        geo::Meter geo_length;
     };
 };
 
@@ -43,9 +43,9 @@ public:
     void AddStop(Stop stop);
     void AddBus(Bus bus);
 
-    void SetDistance(std::string_view stop_name_from, std::string_view stop_name_to, Meter distance);
+    void SetDistance(std::string_view stop_name_from, std::string_view stop_name_to, geo::Meter distance);
 
-    std::optional<Meter> GetDistance(std::string_view stop_name_from, std::string_view stop_name_to) const;
+    std::optional<geo::Meter> GetDistance(std::string_view stop_name_from, std::string_view stop_name_to) const;
 
     [[nodiscard]] std::optional<const Stop*> FindStopBy(std::string_view stop_name) const;
     [[nodiscard]] std::optional<const Bus*> FindBusBy(std::string_view bus_name) const;
@@ -89,10 +89,10 @@ private:
         std::size_t operator()(std::pair<const Stop*, const Stop*> stops) const noexcept;
     };
 
-    mutable std::unordered_map<std::pair<const Stop*, const Stop*>, Meter, StopPtrsHasher> distances_;
+    mutable std::unordered_map<std::pair<const Stop*, const Stop*>, geo::Meter, StopPtrsHasher> distances_;
 
-    [[nodiscard]] Meter GetDistanceBetween(const Stop* from, const Stop* to) const;
-    [[nodiscard]] Meter GetGeoDistanceBetween(const Stop* from, const Stop* to) const noexcept;
+    [[nodiscard]] geo::Meter GetDistanceBetween(const Stop* from, const Stop* to) const;
+    [[nodiscard]] geo::Meter GetGeoDistanceBetween(const Stop* from, const Stop* to) const noexcept;
 };
 
 } // namespace transport_catalogue

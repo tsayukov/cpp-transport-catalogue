@@ -23,7 +23,8 @@ void TransportCatalogue::AddBus(Bus bus) {
     }
 }
 
-void TransportCatalogue::SetDistance(std::string_view stop_name_from, std::string_view stop_name_to, Meter distance) {
+void TransportCatalogue::SetDistance(std::string_view stop_name_from, std::string_view stop_name_to,
+                                     geo::Meter distance) {
     auto iter_from = stop_indices_.find(stop_name_from);
     auto iter_to = stop_indices_.find(stop_name_to);
     if (iter_from == stop_indices_.end() || iter_to == stop_indices_.end()) {
@@ -35,7 +36,7 @@ void TransportCatalogue::SetDistance(std::string_view stop_name_from, std::strin
     distances_.emplace(std::make_pair(stop_from_ptr, stop_to_ptr), distance);
 }
 
-std::optional<Meter> TransportCatalogue::GetDistance(std::string_view stop_name_from,
+std::optional<geo::Meter> TransportCatalogue::GetDistance(std::string_view stop_name_from,
                                                      std::string_view stop_name_to) const {
     auto iter_from = stop_indices_.find(stop_name_from);
     auto iter_to = stop_indices_.find(stop_name_to);
@@ -144,10 +145,10 @@ const Bus::Statistics& TransportCatalogue::ComputeBusStatistics(const Bus* bus_p
     for (std::size_t i = 0; i < bus.stops.size() - 1; ++i) {
         unique_stops.emplace(bus.stops[i]);
 
-        Meter distance = GetDistanceBetween(bus.stops[i], bus.stops[i + 1]);
+        auto distance = GetDistanceBetween(bus.stops[i], bus.stops[i + 1]);
         stats.route_length = double_sum_route_length(distance);
 
-        Meter geo_distance = GetGeoDistanceBetween(bus.stops[i], bus.stops[i + 1]);
+        auto geo_distance = GetGeoDistanceBetween(bus.stops[i], bus.stops[i + 1]);
         stats.geo_length = double_sum_geo_length(geo_distance);
     }
 
@@ -164,13 +165,13 @@ std::size_t TransportCatalogue::StopPtrsHasher::operator()(std::pair<const Stop*
     return stop_hash(stops.first) + prime_num * stop_hash(stops.second);
 }
 
-[[nodiscard]] Meter TransportCatalogue::GetDistanceBetween(const Stop* from, const Stop* to) const {
+[[nodiscard]] geo::Meter TransportCatalogue::GetDistanceBetween(const Stop* from, const Stop* to) const {
     auto iter = distances_.find({from, to});
     if (iter != distances_.end()) {
         return iter->second;
     }
 
-    auto distance = Meter(0);
+    auto distance = geo::Meter(0);
     iter = distances_.find({to, from});
     assert(iter != distances_.end());
 
@@ -180,7 +181,7 @@ std::size_t TransportCatalogue::StopPtrsHasher::operator()(std::pair<const Stop*
     return distance;
 }
 
-[[nodiscard]] Meter TransportCatalogue::GetGeoDistanceBetween(const Stop* from, const Stop* to) const noexcept {
+[[nodiscard]] geo::Meter TransportCatalogue::GetGeoDistanceBetween(const Stop* from, const Stop* to) const noexcept {
     return geo::ComputeDistance(from->coordinates, to->coordinates);
 }
 
