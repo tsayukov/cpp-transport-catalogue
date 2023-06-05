@@ -1,5 +1,7 @@
 #include "str_view_handler.h"
 
+#include <algorithm>
+
 namespace transport_catalogue::str_view_handler {
 
 [[nodiscard]] bool IsSpace(char ch) noexcept {

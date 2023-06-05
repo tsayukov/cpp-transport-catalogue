@@ -152,12 +152,12 @@ template<>
 
     Query<Tag::StopCreation> query;
     query.stop_name = std::string(stop_name);
-    query.latitude = ParseAs<geo::Deg>(split_view.NextStrippedSubstrBefore(',')).value();
-    query.longitude = ParseAs<geo::Deg>(split_view.NextStrippedSubstrBefore(',')).value();
+    query.latitude = std::stod(std::string(split_view.NextStrippedSubstrBefore(',')));
+    query.longitude = std::stod(std::string(split_view.NextStrippedSubstrBefore(',')));
 
     query.stop_distances_subquery.from_stop_name = std::string(stop_name);
     while (!split_view.Empty()) {
-        const auto distance = ParseAs<geo::Meter>(split_view.NextStrippedSubstrBefore("m to"sv)).value();
+        const auto distance = std::stod(std::string(split_view.NextStrippedSubstrBefore("m to"sv)));
         const auto to_stop_name = split_view.NextStrippedSubstrBefore(',');
         query.stop_distances_subquery.distances_to_stops.emplace(std::string(to_stop_name), distance);
     }
