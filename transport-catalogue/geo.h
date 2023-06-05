@@ -25,6 +25,8 @@ struct Coordinates {
 };
 
 inline constexpr Rad AsRad(Deg deg) noexcept {
+    // C++17 still doesn't have PI constant. GCC has M_PI macros, but not MSVC.
+    // Can't wait to use C++20 <numbers>!
     constexpr Rad pi = 3.1415926535;
     constexpr Rad conversion_factor = pi / 180.0;
     return deg * conversion_factor;
