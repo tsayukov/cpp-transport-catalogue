@@ -19,13 +19,13 @@ template<typename Input>
 [[nodiscard]] bool ReadFrom(Input& input, std::string* helper_str_ptr) = delete;
 
 template<>
-[[nodiscard]] bool ReadFrom<std::istream>(std::istream& input, std::string* helper_str_ptr) {
+[[nodiscard]] inline bool ReadFrom<std::istream>(std::istream& input, std::string* helper_str_ptr) {
     assert(helper_str_ptr != nullptr);
     return static_cast<bool>(getline(input, *helper_str_ptr));
 }
 
 template<>
-[[nodiscard]] bool ReadFrom<std::istringstream>(std::istringstream& input, std::string* helper_str_ptr) {
+[[nodiscard]] inline bool ReadFrom<std::istringstream>(std::istringstream& input, std::string* helper_str_ptr) {
     assert(helper_str_ptr != nullptr);
     return static_cast<bool>(getline(input, *helper_str_ptr));
 }
