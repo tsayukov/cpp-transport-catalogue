@@ -29,6 +29,12 @@ template<>
 }
 
 template<typename Input>
+[[nodiscard]] std::pair<query::Any, bool> ReadQuery(Input& input) {
+    std::string helper_str;
+    return ReadQuery(input, helper_str);
+}
+
+template<typename Input>
 [[nodiscard]] std::pair<query::Any, bool> ReadQuery(Input& input, std::string& helper_str) {
     const bool is_read_successful = ReadFrom<Input>(input, helper_str);
     auto result = std::make_pair(query::Parse(helper_str), is_read_successful);

@@ -171,7 +171,7 @@ using namespace query;
 
 inline void TestReadQuery() {
     std::istringstream input("Stop A: 0, 0"s, std::ios_base::in);
-    const auto& [any_query, is_read_successful] = ReadQuery(input);
+    const auto [any_query, is_read_successful] = ReadQuery(input);
     ASSERT(is_read_successful);
     const auto& query = any_query.GetData<Tag::StopCreation>();
     const auto answer = Query<Tag::StopCreation>{ "A"s, 0.0, 0.0, {} };
