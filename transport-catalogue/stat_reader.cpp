@@ -6,7 +6,7 @@ namespace transport_catalogue::query::output {
 
 using namespace std::string_literals;
 
-std::ostream& PrintBusInfo(std::ostream& output, const TransportCatalogue::BusInfo& bus_info) {
+std::ostream& operator<<(std::ostream& output, const TransportCatalogue::BusInfo& bus_info) {
     output << "Bus "s << bus_info.bus_name << ": "s;
     if (!bus_info.statistics.has_value()) {
         return output << "not found"s;
@@ -19,7 +19,7 @@ std::ostream& PrintBusInfo(std::ostream& output, const TransportCatalogue::BusIn
     return output;
 }
 
-std::ostream& PrintStopInfo(std::ostream& output, const TransportCatalogue::StopInfo& stop_info) {
+std::ostream& operator<<(std::ostream& output, const TransportCatalogue::StopInfo& stop_info) {
     output << "Stop "s << stop_info.stop_name << ": "s;
     if (!stop_info.buses.has_value()) {
         return output << "not found"s;
@@ -35,12 +35,12 @@ std::ostream& PrintStopInfo(std::ostream& output, const TransportCatalogue::Stop
     return output;
 }
 
-std::ostream& operator<<(std::ostream& output, const TransportCatalogue::BusInfo& bus_info) {
-    return PrintBusInfo(output, bus_info);
+std::ostream& PrintBusInfo(std::ostream& output, const TransportCatalogue::BusInfo& bus_info) {
+    return output << bus_info << '\n';
 }
 
-std::ostream& operator<<(std::ostream& output, const TransportCatalogue::StopInfo& stop_info) {
-    return PrintStopInfo(output, stop_info);
+std::ostream& PrintStopInfo(std::ostream& output, const TransportCatalogue::StopInfo& stop_info) {
+    return output << stop_info << '\n';
 }
 
 void ProcessQueries(std::vector<query::Any>&& queries, std::ostream& output,
@@ -48,10 +48,10 @@ void ProcessQueries(std::vector<query::Any>&& queries, std::ostream& output,
     for (auto& query : queries) {
         if (query.GetTag() == Tag::BusInfo) {
             const auto& bus_info = transport_catalogue.GetBusInfo(query.GetData<Tag::BusInfo>().bus_name);
-            output << bus_info << '\n';
+            PrintBusInfo(output, bus_info);
         } else if (query.GetTag() == Tag::StopInfo) {
             const auto& stop_info = transport_catalogue.GetStopInfo(query.GetData<Tag::StopInfo>().stop_name);
-            output << stop_info << '\n';
+            PrintStopInfo(output, stop_info);
         }
     }
 }
