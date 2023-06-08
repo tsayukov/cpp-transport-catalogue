@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <unordered_set>
-#include <stdexcept>
 #include <cassert>
 
 namespace transport_catalogue {
@@ -66,7 +65,7 @@ std::optional<geo::Meter> TransportCatalogue::GetDistance(std::string_view stop_
     return GetDistanceBetween(stop_from_ptr, stop_to_ptr);
 }
 
-[[nodiscard]] std::optional<const Bus*> TransportCatalogue::FindBusBy(std::string_view bus_name) const {
+std::optional<const Bus*> TransportCatalogue::FindBusBy(std::string_view bus_name) const {
     if (auto iter = bus_indices_.find(bus_name); iter == bus_indices_.end()) {
         return std::nullopt;
     } else {
@@ -75,7 +74,7 @@ std::optional<geo::Meter> TransportCatalogue::GetDistance(std::string_view stop_
     }
 }
 
-[[nodiscard]] std::optional<const Stop*> TransportCatalogue::FindStopBy(std::string_view stop_name) const {
+std::optional<const Stop*> TransportCatalogue::FindStopBy(std::string_view stop_name) const {
     if (auto iter = stop_indices_.find(stop_name); iter == stop_indices_.end()) {
         return std::nullopt;
     } else {
@@ -112,7 +111,7 @@ TransportCatalogue::StopInfo TransportCatalogue::GetStopInfo(std::string_view st
     return stop_info;
 }
 
-[[nodiscard]] TransportCatalogue::BusInfo TransportCatalogue::GetBusInfo(std::string_view bus_name) const {
+TransportCatalogue::BusInfo TransportCatalogue::GetBusInfo(std::string_view bus_name) const {
     const auto bus = FindBusBy(bus_name);
     if (!bus.has_value()) {
         return { bus_name, std::nullopt };
@@ -184,7 +183,7 @@ std::size_t TransportCatalogue::StopPtrsHasher::operator()(std::pair<const Stop*
     return stop_hash(stops.first) + prime_num * stop_hash(stops.second);
 }
 
-[[nodiscard]] geo::Meter TransportCatalogue::GetDistanceBetween(const Stop* from, const Stop* to) const {
+geo::Meter TransportCatalogue::GetDistanceBetween(const Stop* from, const Stop* to) const {
     auto iter = distances_.find({from, to});
     if (iter != distances_.end()) {
         return iter->second;
@@ -200,7 +199,7 @@ std::size_t TransportCatalogue::StopPtrsHasher::operator()(std::pair<const Stop*
     return distance;
 }
 
-[[nodiscard]] geo::Meter TransportCatalogue::GetGeoDistanceBetween(const Stop* from, const Stop* to) const noexcept {
+geo::Meter TransportCatalogue::GetGeoDistanceBetween(const Stop* from, const Stop* to) const noexcept {
     return geo::ComputeDistance(from->coordinates, to->coordinates);
 }
 

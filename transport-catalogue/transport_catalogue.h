@@ -4,27 +4,15 @@
 #pragma once
 
 #include "geo.h"
+#include "domain.h"
 
 #include <deque>
 #include <optional>
-#include <string>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
 
 namespace transport_catalogue {
-
-struct Bus;
-
-struct Stop {
-    std::string name;
-    geo::Coordinates coordinates;
-};
-
-struct Bus {
-    std::string name;
-    std::vector<const Stop*> stops;
-};
 
 class TransportCatalogue {
 public:
@@ -36,7 +24,8 @@ public:
 
     void SetDistance(std::string_view stop_name_from, std::string_view stop_name_to, geo::Meter distance);
 
-    std::optional<geo::Meter> GetDistance(std::string_view stop_name_from, std::string_view stop_name_to) const;
+    [[nodiscard]] std::optional<geo::Meter> GetDistance(std::string_view stop_name_from,
+                                                        std::string_view stop_name_to) const;
 
     [[nodiscard]] std::optional<const Stop*> FindStopBy(std::string_view stop_name) const;
     [[nodiscard]] std::optional<const Bus*> FindBusBy(std::string_view bus_name) const;
