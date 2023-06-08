@@ -7,7 +7,7 @@ namespace transport_catalogue::query::input {
 
 template<>
 void Process<Tag::StopCreation>(Query<Tag::StopCreation>& query, TransportCatalogue& transport_catalogue) {
-    transport_catalogue.AddStop({ std::move(query.stop_name), { query.latitude, query.longitude } });
+    transport_catalogue.AddStop({ std::move(query.stop_name), query.coordinates });
 }
 
 template<>

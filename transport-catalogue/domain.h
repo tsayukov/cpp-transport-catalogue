@@ -1,3 +1,6 @@
+/// \file
+/// Entities of TransportCatalogue domain
+
 #pragma once
 
 #include "geo.h"
@@ -16,5 +19,7 @@ struct Bus {
     std::string name;
     std::vector<const Stop*> stops;
 };
+
+[[nodiscard]] geo::Meter GetGeoDistance(const Stop& from, const Stop& to) noexcept;
 
 } // namespace transport_catalogue

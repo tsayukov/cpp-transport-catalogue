@@ -102,8 +102,7 @@ struct Query<Tag::StopDistances> {
 template<>
 struct Query<Tag::StopCreation> {
     std::string stop_name;
-    geo::Deg latitude;
-    geo::Deg longitude;
+    geo::Coordinates coordinates;
 
     Query<Tag::StopDistances> stop_distances_subquery;
 };
@@ -152,8 +151,9 @@ template<>
 
     Query<Tag::StopCreation> query;
     query.stop_name = std::string(stop_name);
-    query.latitude = std::stod(std::string(split_view.NextStrippedSubstrBefore(',')));
-    query.longitude = std::stod(std::string(split_view.NextStrippedSubstrBefore(',')));
+    const geo::Degree latitude = std::stod(std::string(split_view.NextStrippedSubstrBefore(',')));
+    const geo::Degree longitude = std::stod(std::string(split_view.NextStrippedSubstrBefore(',')));
+    query.coordinates = geo::Coordinates(latitude, longitude);
 
     query.stop_distances_subquery.from_stop_name = std::string(stop_name);
     while (!split_view.Empty()) {

@@ -84,14 +84,13 @@ private:
 
     // Distance
 
-    struct StopPtrsHasher {
+    struct StopPtrPairHasher {
         std::size_t operator()(std::pair<const Stop*, const Stop*> stops) const noexcept;
     };
 
-    mutable std::unordered_map<std::pair<const Stop*, const Stop*>, geo::Meter, StopPtrsHasher> distances_;
+    mutable std::unordered_map<std::pair<const Stop*, const Stop*>, geo::Meter, StopPtrPairHasher> distances_;
 
     [[nodiscard]] geo::Meter GetDistanceBetween(const Stop* from, const Stop* to) const;
-    [[nodiscard]] geo::Meter GetGeoDistanceBetween(const Stop* from, const Stop* to) const noexcept;
 };
 
 } // namespace transport_catalogue

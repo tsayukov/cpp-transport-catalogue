@@ -1,8 +1,8 @@
 #include "transport_catalogue.h"
 
 #include <algorithm>
-#include <unordered_set>
 #include <cassert>
+#include <unordered_set>
 
 namespace transport_catalogue {
 
@@ -166,7 +166,7 @@ const TransportCatalogue::BusInfo& TransportCatalogue::ComputeBusStatistics(cons
         auto distance = GetDistanceBetween(bus.stops[i], bus.stops[i + 1]);
         stats.route_length = double_sum_route_length(distance);
 
-        auto geo_distance = GetGeoDistanceBetween(bus.stops[i], bus.stops[i + 1]);
+        auto geo_distance = GetGeoDistance(*bus.stops[i], *bus.stops[i + 1]);
         stats.geo_length = double_sum_geo_length(geo_distance);
     }
 
@@ -177,7 +177,7 @@ const TransportCatalogue::BusInfo& TransportCatalogue::ComputeBusStatistics(cons
 
 // Distance
 
-std::size_t TransportCatalogue::StopPtrsHasher::operator()(std::pair<const Stop*, const Stop*> stops) const noexcept {
+std::size_t TransportCatalogue::StopPtrPairHasher::operator()(std::pair<const Stop*, const Stop*> stops) const noexcept {
     static std::hash<const Stop*> stop_hash;
     constexpr unsigned int prime_num = 37;
     return stop_hash(stops.first) + prime_num * stop_hash(stops.second);
@@ -197,10 +197,6 @@ geo::Meter TransportCatalogue::GetDistanceBetween(const Stop* from, const Stop* 
     distances_.emplace(std::make_pair(from, to), distance);
 
     return distance;
-}
-
-geo::Meter TransportCatalogue::GetGeoDistanceBetween(const Stop* from, const Stop* to) const noexcept {
-    return geo::ComputeDistance(from->coordinates, to->coordinates);
 }
 
 } // namespace transport_catalogue

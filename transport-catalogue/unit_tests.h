@@ -93,23 +93,20 @@ inline void TestParseStopCreation() {
     {
         const std::string_view text = "Stop A: 0, 0"sv;
         const auto query = Parse(text).GetData<Tag::StopCreation>();
-        const auto answer = Query<Tag::StopCreation>{ "A"s, 0.0, 0.0, {} };
-        ASSERT((tie(query.stop_name, query.latitude, query.longitude))
-                == (tie(answer.stop_name, answer.latitude, answer.longitude)));
+        const auto answer = Query<Tag::StopCreation>{ "A"s, geo::Coordinates(), {} };
+        ASSERT((tie(query.stop_name, query.coordinates)) == (tie(answer.stop_name, answer.coordinates)));
     }
     {
         const std::string_view text = "Stop Stop 4A: 55.60, 0.25"sv;
         const auto query = Parse(text).GetData<Tag::StopCreation>();
-        const auto answer = Query<Tag::StopCreation>{ "Stop 4A"s, 55.60, 0.25, {} };
-        ASSERT((tie(query.stop_name, query.latitude, query.longitude))
-                == (tie(answer.stop_name, answer.latitude, answer.longitude)));
+        const auto answer = Query<Tag::StopCreation>{ "Stop 4A"s, geo::Coordinates(55.60, 0.25), {} };
+        ASSERT((tie(query.stop_name, query.coordinates)) == (tie(answer.stop_name, answer.coordinates)));
     }
     {
         const std::string_view text = "Stop Stop 4A: +55.60, -0.25"sv;
         const auto query = Parse(text).GetData<Tag::StopCreation>();
-        const auto answer = Query<Tag::StopCreation>{ "Stop 4A"s, 55.60, -0.25, {} };
-        ASSERT((tie(query.stop_name, query.latitude, query.longitude))
-               == (tie(answer.stop_name, answer.latitude, answer.longitude)));
+        const auto answer = Query<Tag::StopCreation>{ "Stop 4A"s, geo::Coordinates(55.60, -0.25), {} };
+        ASSERT((tie(query.stop_name, query.coordinates)) == (tie(answer.stop_name, answer.coordinates)));
     }
 }
 
@@ -174,9 +171,8 @@ inline void TestReadQuery() {
     const auto [any_query, is_read_successful] = ReadQuery(input);
     ASSERT(is_read_successful);
     const auto& query = any_query.GetData<Tag::StopCreation>();
-    const auto answer = Query<Tag::StopCreation>{ "A"s, 0.0, 0.0, {} };
-    ASSERT((tie(query.stop_name, query.latitude, query.longitude))
-           == (tie(answer.stop_name, answer.latitude, answer.longitude)));
+    const auto answer = Query<Tag::StopCreation>{ "A"s, geo::Coordinates(), {} };
+    ASSERT((tie(query.stop_name, query.coordinates)) == (tie(answer.stop_name, answer.coordinates)));
 }
 
 inline void TestReadQueries() {
@@ -189,9 +185,8 @@ inline void TestReadQueries() {
     auto queries = ReadQueries(input, 3);
 
     const auto& query_1 = queries[0].GetData<Tag::StopCreation>();
-    const auto answer_1 = Query<Tag::StopCreation>{ "A"s, 0.0, 0.0, {} };
-    ASSERT((tie(query_1.stop_name, query_1.latitude, query_1.longitude))
-           == (tie(answer_1.stop_name, answer_1.latitude, answer_1.longitude)));
+    const auto answer_1 = Query<Tag::StopCreation>{ "A"s, geo::Coordinates(), {} };
+    ASSERT((tie(query_1.stop_name, query_1.coordinates)) == (tie(answer_1.stop_name, answer_1.coordinates)));
 
     const auto& query_2 = queries[1].GetData<Tag::BusCreation>();
     const auto answer_2 = Query<Tag::BusCreation>{
