@@ -4,10 +4,10 @@
 #pragma once
 
 #include <array>
-#include <string_view>
-#include <optional>
-#include <charconv>
 #include <cctype>
+#include <charconv>
+#include <optional>
+#include <string_view>
 
 namespace transport_catalogue::str_view_handler {
 

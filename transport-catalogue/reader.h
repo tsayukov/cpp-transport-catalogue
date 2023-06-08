@@ -8,9 +8,9 @@
 
 #include "query.h"
 
+#include <iostream>
 #include <string>
 #include <sstream>
-#include <iostream>
 #include <vector>
 
 namespace transport_catalogue::reader {

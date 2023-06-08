@@ -3,8 +3,8 @@
 #include <iostream>
 #include <map>
 #include <set>
-#include <vector>
 #include <random>
+#include <vector>
 
 #define ASSERT_EQUAL(a, b) \
 unit_test_tools::AssertEqualImpl((a), (b), #a, #b, __FILE__, __FUNCTION__, __LINE__, "")
