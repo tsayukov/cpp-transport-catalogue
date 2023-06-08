@@ -29,7 +29,7 @@ std::ostream& operator<<(std::ostream& output, const TransportCatalogue::StopInf
         return output << "no buses"s;
     }
     output << "buses"s;
-    for (const Bus* bus_ptr : buses) {
+    for (BusPtr bus_ptr : buses) {
         output << " "s << bus_ptr->name;
     }
     return output;
@@ -43,14 +43,13 @@ std::ostream& PrintStopInfo(std::ostream& output, const TransportCatalogue::Stop
     return output << stop_info << '\n';
 }
 
-void ProcessQueries(std::vector<query::Any>&& queries, std::ostream& output,
-                    const TransportCatalogue& transport_catalogue) {
+void ProcessQueries(std::vector<query::Any>&& queries, std::ostream& output, const Handler& handler) {
     for (auto& query : queries) {
         if (query.GetTag() == Tag::BusInfo) {
-            const auto& bus_info = transport_catalogue.GetBusInfo(query.GetData<Tag::BusInfo>().bus_name);
+            const auto& bus_info = handler.GetBusInfo(query.GetData<Tag::BusInfo>().bus_name);
             PrintBusInfo(output, bus_info);
         } else if (query.GetTag() == Tag::StopInfo) {
-            const auto& stop_info = transport_catalogue.GetStopInfo(query.GetData<Tag::StopInfo>().stop_name);
+            const auto& stop_info = handler.GetStopInfo(query.GetData<Tag::StopInfo>().stop_name);
             PrintStopInfo(output, stop_info);
         }
     }

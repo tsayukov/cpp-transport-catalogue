@@ -13,7 +13,7 @@ void TransportCatalogue::AddStop(const Stop& stop) {
 
 void TransportCatalogue::AddStop(Stop&& stop) {
     stops_.push_back(std::move(stop));
-    const Stop* stop_ptr = &stops_.back();
+    StopPtr stop_ptr = &stops_.back();
     stop_indices_.emplace(stop_ptr->name, stop_ptr);
 }
 
@@ -24,10 +24,10 @@ void TransportCatalogue::AddBus(const Bus& bus) {
 
 void TransportCatalogue::AddBus(Bus&& bus) {
     buses_.push_back(std::move(bus));
-    const Bus* bus_ptr = &buses_.back();
+    BusPtr bus_ptr = &buses_.back();
     bus_indices_.emplace(bus_ptr->name, bus_ptr);
 
-    for (const Stop* stop_ptr : bus_ptr->stops) {
+    for (StopPtr stop_ptr : bus_ptr->stops) {
         auto iter = stop_statistics_.find(stop_ptr);
         if (iter != stop_statistics_.end()) {
             iter->second.buses.value().emplace_back(bus_ptr);
@@ -47,8 +47,8 @@ void TransportCatalogue::SetDistance(std::string_view stop_name_from, std::strin
         return;
     }
 
-    const Stop* stop_from_ptr = iter_from->second;
-    const Stop* stop_to_ptr = iter_to->second;
+    StopPtr stop_from_ptr = iter_from->second;
+    StopPtr stop_to_ptr = iter_to->second;
     distances_.emplace(std::make_pair(stop_from_ptr, stop_to_ptr), distance);
 }
 
@@ -60,30 +60,35 @@ std::optional<geo::Meter> TransportCatalogue::GetDistance(std::string_view stop_
         return std::nullopt;
     }
 
-    const Stop* stop_from_ptr = iter_from->second;
-    const Stop* stop_to_ptr = iter_to->second;
-    return GetDistanceBetween(stop_from_ptr, stop_to_ptr);
+    const Stop& stop_from = *iter_from->second;
+    const Stop& stop_to = *iter_to->second;
+    return GetDistance(stop_from, stop_to);
 }
 
-std::optional<const Bus*> TransportCatalogue::FindBusBy(std::string_view bus_name) const {
+std::optional<BusPtr> TransportCatalogue::FindBusBy(std::string_view bus_name) const {
     if (auto iter = bus_indices_.find(bus_name); iter == bus_indices_.end()) {
         return std::nullopt;
     } else {
-        const Bus* bus = iter->second;
+        BusPtr bus = iter->second;
         return bus;
     }
 }
 
-std::optional<const Stop*> TransportCatalogue::FindStopBy(std::string_view stop_name) const {
+std::optional<StopPtr> TransportCatalogue::FindStopBy(std::string_view stop_name) const {
     if (auto iter = stop_indices_.find(stop_name); iter == stop_indices_.end()) {
         return std::nullopt;
     } else {
-        const Stop* stop = iter->second;
+        StopPtr stop = iter->second;
         return stop;
     }
 }
 
 // Statistics
+
+TransportCatalogue::StopInfo::StopInfo(std::string_view stop_name, std::optional<Buses> buses)
+        : stop_name(stop_name)
+        , buses(std::move(buses)) {
+}
 
 TransportCatalogue::StopInfo TransportCatalogue::GetStopInfo(std::string_view stop_name) const {
     const auto stop = FindStopBy(stop_name);
@@ -119,7 +124,7 @@ TransportCatalogue::BusInfo TransportCatalogue::GetBusInfo(std::string_view bus_
 
     auto iter_bus_stat = bus_statistics_.find(bus.value());
     const BusInfo& bus_info = (iter_bus_stat == bus_statistics_.end())
-                            ? ComputeBusStatistics(bus.value())
+                            ? ComputeBusStatistics(*bus.value())
                             : iter_bus_stat->second;
     return bus_info;
 }
@@ -143,13 +148,10 @@ struct KahanFloatingPointAddition {
 
 }
 
-const TransportCatalogue::BusInfo& TransportCatalogue::ComputeBusStatistics(const Bus* bus_ptr) const {
-    assert(bus_ptr != nullptr);
-
+const TransportCatalogue::BusInfo& TransportCatalogue::ComputeBusStatistics(const Bus& bus) const {
     constexpr unsigned int stops_buses_factor = 2;
 
-    const Bus& bus = *bus_ptr;
-    auto [iter, _] = bus_statistics_.emplace(bus_ptr, BusInfo{ bus.name, std::make_optional<BusInfo::Statistics>() });
+    auto [iter, _] = bus_statistics_.emplace(&bus, BusInfo{ bus.name, std::make_optional<BusInfo::Statistics>() });
 
     BusInfo& bus_info = iter->second;
     BusInfo::Statistics& stats = bus_info.statistics.value();
@@ -163,7 +165,7 @@ const TransportCatalogue::BusInfo& TransportCatalogue::ComputeBusStatistics(cons
     for (std::size_t i = 0; i < bus.stops.size() - 1; ++i) {
         unique_stops.emplace(bus.stops[i]);
 
-        auto distance = GetDistanceBetween(bus.stops[i], bus.stops[i + 1]);
+        auto distance = GetDistance(*bus.stops[i], *bus.stops[i + 1]);
         stats.route_length = double_sum_route_length(distance);
 
         auto geo_distance = GetGeoDistance(*bus.stops[i], *bus.stops[i + 1]);
@@ -177,24 +179,24 @@ const TransportCatalogue::BusInfo& TransportCatalogue::ComputeBusStatistics(cons
 
 // Distance
 
-std::size_t TransportCatalogue::StopPtrPairHasher::operator()(std::pair<const Stop*, const Stop*> stops) const noexcept {
-    static std::hash<const Stop*> stop_hash;
+std::size_t TransportCatalogue::StopPtrPairHasher::operator()(std::pair<StopPtr, StopPtr> stops) const noexcept {
+    static std::hash<StopPtr> stop_hash;
     constexpr unsigned int prime_num = 37;
     return stop_hash(stops.first) + prime_num * stop_hash(stops.second);
 }
 
-geo::Meter TransportCatalogue::GetDistanceBetween(const Stop* from, const Stop* to) const {
-    auto iter = distances_.find({from, to});
+geo::Meter TransportCatalogue::GetDistance(const Stop& from, const Stop& to) const {
+    auto iter = distances_.find({&from, &to});
     if (iter != distances_.end()) {
         return iter->second;
     }
 
     auto distance = geo::Meter(0);
-    iter = distances_.find({to, from});
+    iter = distances_.find({&to, &from});
     assert(iter != distances_.end());
 
     distance = iter->second;
-    distances_.emplace(std::make_pair(from, to), distance);
+    distances_.emplace(std::make_pair(&from, &to), distance);
 
     return distance;
 }
