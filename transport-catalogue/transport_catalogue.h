@@ -28,8 +28,11 @@ struct Bus {
 
 class TransportCatalogue {
 public:
-    void AddStop(Stop stop);
-    void AddBus(Bus bus);
+    void AddStop(const Stop& stop);
+    void AddStop(Stop&& stop);
+
+    void AddBus(const Bus& bus);
+    void AddBus(Bus&& bus);
 
     void SetDistance(std::string_view stop_name_from, std::string_view stop_name_to, geo::Meter distance);
 

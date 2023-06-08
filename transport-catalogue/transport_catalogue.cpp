@@ -7,13 +7,23 @@
 
 namespace transport_catalogue {
 
-void TransportCatalogue::AddStop(Stop stop) {
+void TransportCatalogue::AddStop(const Stop& stop) {
+    Stop stop_copy = stop;
+    AddStop(std::move(stop_copy));
+}
+
+void TransportCatalogue::AddStop(Stop&& stop) {
     stops_.push_back(std::move(stop));
     const Stop* stop_ptr = &stops_.back();
     stop_indices_.emplace(stop_ptr->name, stop_ptr);
 }
 
-void TransportCatalogue::AddBus(Bus bus) {
+void TransportCatalogue::AddBus(const Bus& bus) {
+    Bus bus_copy = bus;
+    AddBus(std::move(bus_copy));
+}
+
+void TransportCatalogue::AddBus(Bus&& bus) {
     buses_.push_back(std::move(bus));
     const Bus* bus_ptr = &buses_.back();
     bus_indices_.emplace(bus_ptr->name, bus_ptr);
