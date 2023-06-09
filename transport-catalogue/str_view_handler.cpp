@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-namespace transport_catalogue::str_view_handler {
+namespace str_view_handler {
 
 [[nodiscard]] bool IsSpace(char ch) noexcept {
     return std::isspace(static_cast<unsigned char>(ch));
@@ -91,4 +91,4 @@ void SplitView::SkipSubstrBefore(std::string_view separator) noexcept {
     (void) NextSubstrBefore(separator);
 }
 
-} // namespace transport_catalogue::str_view_handler
+} // namespace str_view_handler

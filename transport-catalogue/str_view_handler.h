@@ -9,7 +9,7 @@
 #include <optional>
 #include <string_view>
 
-namespace transport_catalogue::str_view_handler {
+namespace str_view_handler {
 
 [[nodiscard]] bool IsSpace(char ch) noexcept;
 [[nodiscard]] bool IsNotSpace(char ch) noexcept;
@@ -101,5 +101,5 @@ inline void TestSplitView();
 
 } // namespace tests
 
-} // namespace transport_catalogue::str_view_handler
+} // namespace str_view_handler
 

@@ -8,12 +8,9 @@
 
 #include <sstream>
 
-namespace transport_catalogue {
-
-using namespace std::string_literals;
-using namespace std::string_view_literals;
-
 namespace str_view_handler::tests {
+
+using namespace std::string_view_literals;
 
 inline void TestLeftStrip() {
     ASSERT(LeftStrip(""sv).empty());
@@ -86,6 +83,11 @@ inline void RunAllTests() {
 }
 
 } // namespace str_view_handler::tests
+
+namespace transport_catalogue {
+
+using namespace std::string_literals;
+using namespace std::string_view_literals;
 
 namespace query::tests {
 
