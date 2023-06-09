@@ -6,6 +6,7 @@
 #include "svg.h"
 #include "transport_catalogue.h"
 
+#include <optional>
 #include <string_view>
 
 namespace transport_catalogue::query {
@@ -14,9 +15,9 @@ class Handler {
 public:
     explicit Handler(const TransportCatalogue& database/*, const renderer::MapRenderer& renderer_*/) noexcept;
 
-    [[nodiscard]] TransportCatalogue::BusInfo GetBusInfo(std::string_view bus_name) const;
+    [[nodiscard]] std::optional<const TransportCatalogue::BusInfo*> GetBusInfo(std::string_view bus_name) const;
 
-    [[nodiscard]] TransportCatalogue::StopInfo GetStopInfo(std::string_view stop_name) const;
+    [[nodiscard]] std::optional<const TransportCatalogue::StopInfo*> GetStopInfo(std::string_view stop_name) const;
 
 //    svg::Document RenderMap() const;
 

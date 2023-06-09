@@ -6,11 +6,11 @@ Handler::Handler(const TransportCatalogue& database/*, const renderer::MapRender
         : database_(database) {
 }
 
-TransportCatalogue::BusInfo Handler::GetBusInfo(std::string_view bus_name) const {
+std::optional<const TransportCatalogue::BusInfo*> Handler::GetBusInfo(std::string_view bus_name) const {
     return database_.GetBusInfo(bus_name);
 }
 
-TransportCatalogue::StopInfo Handler::GetStopInfo(std::string_view stop_name) const {
+std::optional<const TransportCatalogue::StopInfo*> Handler::GetStopInfo(std::string_view stop_name) const {
     return database_.GetStopInfo(stop_name);
 }
 

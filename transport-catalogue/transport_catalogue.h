@@ -37,33 +37,25 @@ public:
 
     struct StopInfo {
     public:
-        using Buses = std::vector<BusPtr>;
+        std::vector<BusPtr> buses;
 
-        std::string_view stop_name;
-        std::optional<Buses> buses;
-
-        StopInfo(std::string_view stop_name, std::optional<Buses> buses);
+        explicit StopInfo(std::vector<BusPtr> buses = {});
 
     private:
         friend TransportCatalogue;
         bool is_buses_unique_and_ordered = false;
     };
 
-    [[nodiscard]] StopInfo GetStopInfo(std::string_view stop_name) const;
+    [[nodiscard]] std::optional<const StopInfo*> GetStopInfo(std::string_view stop_name) const;
 
     struct BusInfo {
-        struct Statistics {
-            unsigned int stops_count;
-            unsigned int unique_stops_count;
-            geo::Meter route_length;
-            geo::Meter geo_length;
-        };
-
-        std::string_view bus_name;
-        std::optional<Statistics> statistics;
+        unsigned int stops_count;
+        unsigned int unique_stops_count;
+        geo::Meter route_length;
+        geo::Meter geo_length;
     };
 
-    [[nodiscard]] BusInfo GetBusInfo(std::string_view bus_name) const;
+    [[nodiscard]] std::optional<const BusInfo*> GetBusInfo(std::string_view bus_name) const;
 
 private:
     template<typename Value>

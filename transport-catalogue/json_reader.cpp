@@ -15,26 +15,27 @@ void ProcessStatQueries(reader::ResultType<reader::From::Json>& queries, std::os
     json::Array array;
     for (auto& [id, query] : queries.stat_queries_) {
         if (query.GetTag() == Tag::BusInfo) {
-            auto&& bus_info = handler.GetBusInfo(query.GetData<Tag::BusInfo>().bus_name);
-            array.push_back(AsJsonNode<TransportCatalogue::BusInfo>(id, std::move(bus_info)));
+            auto bus_info = handler.GetBusInfo(query.GetData<Tag::BusInfo>().bus_name);
+            array.push_back(AsJsonNode<std::optional<const TransportCatalogue::BusInfo*>>(id, bus_info));
         } else if (query.GetTag() == Tag::StopInfo) {
-            auto&& stop_info = handler.GetStopInfo(query.GetData<Tag::StopInfo>().stop_name);
-            array.push_back(AsJsonNode<TransportCatalogue::StopInfo>(id, std::move(stop_info)));
+            auto stop_info = handler.GetStopInfo(query.GetData<Tag::StopInfo>().stop_name);
+            array.push_back(AsJsonNode<std::optional<const TransportCatalogue::StopInfo*>>(id, stop_info));
         }
     }
     json::Print(json::Document(json::Node(std::move(array))), output);
 }
 
 template<>
-[[nodiscard]] json::Node AsJsonNode<TransportCatalogue::StopInfo>(int id, TransportCatalogue::StopInfo&& stop_info) {
+[[nodiscard]] json::Node AsJsonNode<std::optional<const TransportCatalogue::StopInfo*>>(
+        int id, std::optional<const TransportCatalogue::StopInfo*> stop_info) {
     json::Map map;
     map.emplace("request_id"s, json::Node(id));
-    if (!stop_info.buses.has_value()) {
+    if (!stop_info.has_value()) {
         map.emplace("error_message"s, json::Node("not found"s));
         return map;
     }
 
-    const auto& buses = stop_info.buses.value();
+    const auto& buses = stop_info.value()->buses;
     json::Array bus_array;
     bus_array.reserve(buses.size());
     std::transform(
@@ -49,24 +50,26 @@ template<>
 }
 
 template<>
-[[nodiscard]] json::Node AsJsonNode<TransportCatalogue::BusInfo>(int id, TransportCatalogue::BusInfo&& bus_info) {
+[[nodiscard]] json::Node AsJsonNode<std::optional<const TransportCatalogue::BusInfo*>>(
+        int id, std::optional<const TransportCatalogue::BusInfo*> bus_info) {
     json::Map map;
     map.emplace("request_id"s, json::Node(id));
-    if (!bus_info.statistics.has_value()) {
+    if (!bus_info.has_value()) {
         map.emplace("error_message"s, json::Node("not found"s));
         return map;
     }
 
-    const int stop_count = static_cast<int>(bus_info.statistics->stops_count);
+    auto bus_stats_ptr = bus_info.value();
+    const int stop_count = static_cast<int>(bus_stats_ptr->stops_count);
     map.emplace("stop_count"s, json::Node(stop_count));
 
-    const int unique_stops_count = static_cast<int>(bus_info.statistics->unique_stops_count);
+    const int unique_stops_count = static_cast<int>(bus_stats_ptr->unique_stops_count);
     map.emplace("unique_stop_count"s, json::Node(unique_stops_count));
 
-    const double route_length = bus_info.statistics->route_length;
+    const double route_length = bus_stats_ptr->route_length;
     map.emplace("route_length"s, json::Node(route_length));
 
-    const double curvature = bus_info.statistics->route_length / bus_info.statistics->geo_length;
+    const double curvature = bus_stats_ptr->route_length / bus_stats_ptr->geo_length;
     map.emplace("curvature"s, json::Node(curvature));
 
     return map;
