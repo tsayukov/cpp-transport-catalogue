@@ -20,6 +20,9 @@ struct Bus {
     std::vector<const Stop*> stops;
 };
 
+using StopPtr = const Stop*;
+using BusPtr = const Bus*;
+
 [[nodiscard]] geo::Meter GetGeoDistance(const Stop& from, const Stop& to) noexcept;
 
 } // namespace transport_catalogue

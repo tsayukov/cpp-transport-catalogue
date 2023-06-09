@@ -498,7 +498,7 @@ void PrintValue::operator()(const Map& dict) {
 }
 
 void Print(const Document& document, std::ostream& output) {
-    const PrintContext context(output, 4, 0);
+    const PrintContext context(output, 4);
     std::visit(PrintValue{ context }, document.GetRoot().GetValue());
 }
 

@@ -83,6 +83,14 @@ std::optional<StopPtr> TransportCatalogue::FindStopBy(std::string_view stop_name
     }
 }
 
+TransportCatalogue::StopConstIters TransportCatalogue::GetAllStops() const noexcept {
+    return { stops_.cbegin(), stops_.cend() };
+}
+
+TransportCatalogue::BusConstIters TransportCatalogue::GetAllBuses() const noexcept {
+    return { buses_.cbegin(), buses_.cend() };
+}
+
 // Statistics
 
 TransportCatalogue::StopInfo::StopInfo(std::vector<BusPtr> buses)

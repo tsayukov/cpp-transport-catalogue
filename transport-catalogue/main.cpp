@@ -2,6 +2,7 @@
 
 #include "reader.h"
 #include "transport_catalogue.h"
+#include "map_renderer.h"
 #include "request_handler.h"
 #include "json_reader.h"
 
@@ -13,8 +14,12 @@ int main() {
     RunAllTests();
 
     TransportCatalogue transport_catalogue;
-    query::Handler handler(transport_catalogue);
+    renderer::MapRenderer renderer;
+    query::Handler handler(transport_catalogue, renderer);
+
     auto queries = reader::GetAllQueries<reader::From::Json>(std::cin);
     query::ProcessBaseQueries(queries, transport_catalogue);
-    query::ProcessStatQueries(queries, std::cout, handler);
+    query::ProcessRenderSettings(queries, renderer);
+
+    handler.RenderMap().Render(std::cout);
 }

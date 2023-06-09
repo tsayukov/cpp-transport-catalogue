@@ -14,10 +14,13 @@
 
 namespace transport_catalogue {
 
-using StopPtr = const Stop*;
-using BusPtr = const Bus*;
-
 class TransportCatalogue final {
+private:
+    using StopConstIter = typename std::deque<Stop>::const_iterator;
+    using StopConstIters = std::pair<StopConstIter, StopConstIter>;
+
+    using BusConstIter = typename std::deque<Bus>::const_iterator;
+    using BusConstIters = std::pair<BusConstIter, BusConstIter>;
 public:
     void AddStop(const Stop& stop);
     void AddStop(Stop&& stop);
@@ -32,6 +35,10 @@ public:
 
     [[nodiscard]] std::optional<StopPtr> FindStopBy(std::string_view stop_name) const;
     [[nodiscard]] std::optional<BusPtr> FindBusBy(std::string_view bus_name) const;
+
+
+    [[nodiscard]] StopConstIters GetAllStops() const noexcept;
+    [[nodiscard]] BusConstIters GetAllBuses() const noexcept;
 
     // Statistics
 

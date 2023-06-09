@@ -11,6 +11,10 @@ void ProcessBaseQueries(reader::ResultType<reader::From::Json>& queries, Transpo
     input::ProcessQueries(std::move(queries.base_queries_), transport_catalogue);
 }
 
+void ProcessRenderSettings(reader::ResultType<reader::From::Json>& queries, renderer::MapRenderer& renderer) {
+    renderer.Initialize(std::move(queries.render_settings_.settings));
+}
+
 void ProcessStatQueries(reader::ResultType<reader::From::Json>& queries, std::ostream& output, const Handler& handler) {
     json::Array array;
     for (auto& [id, query] : queries.stat_queries_) {

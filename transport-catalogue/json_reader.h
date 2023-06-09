@@ -6,6 +6,7 @@
 #include "json.h"
 #include "reader.h"
 #include "input_reader.h"
+#include "map_renderer.h"
 #include "transport_catalogue.h"
 #include "request_handler.h"
 
@@ -14,6 +15,8 @@
 namespace transport_catalogue::query {
 
 void ProcessBaseQueries(reader::ResultType<reader::From::Json>& queries, TransportCatalogue& transport_catalogue);
+
+void ProcessRenderSettings(reader::ResultType<reader::From::Json>& queries, renderer::MapRenderer& renderer);
 
 void ProcessStatQueries(reader::ResultType<reader::From::Json>& queries, std::ostream& output, const Handler& handler);
 
@@ -27,6 +30,5 @@ template<>
 template<>
 [[nodiscard]] json::Node AsJsonNode<std::optional<const TransportCatalogue::BusInfo*>>(
         int id, std::optional<const TransportCatalogue::BusInfo*> bus_info);
-
 
 } // namespace transport_catalogue::query

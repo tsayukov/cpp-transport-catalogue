@@ -40,6 +40,7 @@ public:
     struct Result {
         std::vector<query::Any> base_queries_;
         std::vector<std::pair<int, query::Any>> stat_queries_;
+        Query<Tag::RenderSettings> render_settings_;
     };
 
     explicit Parser(const json::Document& document) noexcept;
@@ -51,16 +52,15 @@ private:
     Result result_;
 
     void ParseBaseQueries(const json::Array& array);
-
     void ParseStatQueries(const json::Array& array);
+    void ParseRenderSettings(const json::Map& map);
 
     void ParseQuery(const json::Map& map, ParseVariant<Tag::StopInfo>);
-
     void ParseQuery(const json::Map& map, ParseVariant<Tag::StopCreation>);
-
     void ParseQuery(const json::Map& map, ParseVariant<Tag::BusInfo>);
-
     void ParseQuery(const json::Map& map, ParseVariant<Tag::BusCreation>);
+
+    static svg::color::Color ParseColor(const json::Node& node);
 };
 
 [[nodiscard]] Parser::Result Parse(const json::Document& document);

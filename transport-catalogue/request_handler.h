@@ -4,6 +4,8 @@
 #pragma once
 
 #include "svg.h"
+#include "map_renderer.h"
+#include "domain.h"
 #include "transport_catalogue.h"
 
 #include <optional>
@@ -11,19 +13,19 @@
 
 namespace transport_catalogue::query {
 
-class Handler {
+class Handler final {
 public:
-    explicit Handler(const TransportCatalogue& database/*, const renderer::MapRenderer& renderer_*/) noexcept;
+    explicit Handler(const TransportCatalogue& database, const renderer::MapRenderer& renderer_) noexcept;
 
     [[nodiscard]] std::optional<const TransportCatalogue::BusInfo*> GetBusInfo(std::string_view bus_name) const;
 
     [[nodiscard]] std::optional<const TransportCatalogue::StopInfo*> GetStopInfo(std::string_view stop_name) const;
 
-//    svg::Document RenderMap() const;
+    [[nodiscard]] svg::Document RenderMap() const;
 
 private:
     const TransportCatalogue& database_;
-//    const renderer::MapRenderer& renderer_;
+    const renderer::MapRenderer& renderer_;
 };
 
 } // namespace transport_catalogue::query

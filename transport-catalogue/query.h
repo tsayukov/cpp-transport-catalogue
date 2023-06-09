@@ -1,6 +1,8 @@
 #pragma once
 
 #include "geo.h"
+#include "svg.h"
+#include "map_renderer.h"
 
 #include <cassert>
 #include <string>
@@ -16,6 +18,7 @@ enum class Tag {
     BusCreation,
     StopInfo,
     BusInfo,
+    RenderSettings,
 };
 
 template<Tag>
@@ -124,6 +127,11 @@ struct Query<Tag::StopInfo> {
 template<>
 struct Query<Tag::BusInfo> {
     std::string bus_name;
+};
+
+template<>
+struct Query<Tag::RenderSettings> {
+    renderer::Settings settings;
 };
 
 namespace tests {
