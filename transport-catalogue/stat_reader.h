@@ -4,6 +4,7 @@
 #pragma once
 
 #include "query.h"
+#include "reader.h"
 #include "request_handler.h"
 #include "transport_catalogue.h"
 
@@ -17,6 +18,6 @@ std::ostream& operator<<(std::ostream& output, const TransportCatalogue::StopInf
 std::ostream& PrintBusInfo(std::ostream& output, const TransportCatalogue::BusInfo& bus_info);
 std::ostream& PrintStopInfo(std::ostream& output, const TransportCatalogue::StopInfo& stop_info);
 
-void ProcessQueries(std::vector<query::Any>&& queries, std::ostream& output, const Handler& handler);
+void ProcessQueries(reader::ResultType<reader::From::Cli>&& queries, std::ostream& output, const Handler& handler);
 
 } // namespace transport_catalogue::query::output

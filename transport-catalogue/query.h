@@ -1,13 +1,8 @@
-/// \file
-/// Parser that processes a text into queries for filling in and getting info from TransportCatalogue
-
 #pragma once
 
 #include "geo.h"
-#include "str_view_handler.h"
 
 #include <cassert>
-#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -91,6 +86,8 @@ private:
     Deleter deleter_;
 };
 
+using Any = Query<Tag::_>;
+
 // Specific queries
 
 template<>
@@ -128,85 +125,6 @@ template<>
 struct Query<Tag::BusInfo> {
     std::string bus_name;
 };
-
-// Parser
-
-using Any = Query<Tag::_>;
-
-template<Tag>
-[[nodiscard]] Any Parse(str_view_handler::SplitView split_view);
-
-template<>
-[[nodiscard]] inline Any Parse<Tag::StopInfo>(str_view_handler::SplitView split_view) {
-    const auto stop_name = split_view.NextStrippedSubstrBefore(':');
-    return Any(Query<Tag::StopInfo>{ std::string(stop_name) });
-}
-
-template<>
-[[nodiscard]] inline Any Parse<Tag::StopCreation>(str_view_handler::SplitView split_view) {
-    using namespace std::string_view_literals;
-    using namespace str_view_handler;
-
-    const auto stop_name = split_view.NextStrippedSubstrBefore(':');
-
-    Query<Tag::StopCreation> query;
-    query.stop_name = std::string(stop_name);
-    const geo::Degree latitude = std::stod(std::string(split_view.NextStrippedSubstrBefore(',')));
-    const geo::Degree longitude = std::stod(std::string(split_view.NextStrippedSubstrBefore(',')));
-    query.coordinates = geo::Coordinates(latitude, longitude);
-
-    query.stop_distances_subquery.from_stop_name = std::string(stop_name);
-    while (!split_view.Empty()) {
-        const auto distance = std::stod(std::string(split_view.NextStrippedSubstrBefore("m to"sv)));
-        const auto to_stop_name = split_view.NextStrippedSubstrBefore(',');
-        query.stop_distances_subquery.distances_to_stops.emplace(std::string(to_stop_name), distance);
-    }
-    return Any(std::move(query));
-}
-
-template<>
-[[nodiscard]] inline Any Parse<Tag::BusInfo>(str_view_handler::SplitView split_view) {
-    const auto bus_name = split_view.NextStrippedSubstrBefore(':');
-    return Any(Query<Tag::BusInfo>{ std::string(bus_name) });
-}
-
-template<>
-[[nodiscard]] inline Any Parse<Tag::BusCreation>(str_view_handler::SplitView split_view) {
-    const auto bus_name = split_view.NextStrippedSubstrBefore(':');
-    Query<Tag::BusCreation> query;
-    query.bus_name = std::string(bus_name);
-
-    const auto [sep, _] = split_view.CanSplit('>', '-');
-    using RouteView = Query<Tag::BusCreation>::RouteView;
-    query.route_view = (sep == '>') ? RouteView::Full : RouteView::Half;
-
-    while (!split_view.Empty()) {
-        const auto stop_name = split_view.NextStrippedSubstrBefore(sep);
-        query.stops.emplace_back(stop_name);
-    }
-    return Any(std::move(query));
-}
-
-[[nodiscard]] inline Any Parse(std::string_view text) {
-    using namespace std::string_literals;
-    using namespace std::string_view_literals;
-    using namespace str_view_handler;
-
-    SplitView split_view(text);
-    const auto command = split_view.NextStrippedSubstrBefore(' ');
-    if (command == "Stop"sv) {
-        if (!split_view.CanSplit(':')) {
-            return Parse<Tag::StopInfo>(split_view);
-        }
-        return Parse<Tag::StopCreation>(split_view);
-    } else if (command == "Bus"sv) {
-        if (!split_view.CanSplit(':')) {
-            return Parse<Tag::BusInfo>(split_view);
-        }
-        return Parse<Tag::BusCreation>(split_view);
-    }
-    throw std::invalid_argument("No such command '"s + std::string(command) + "'"s);
-}
 
 namespace tests {
 

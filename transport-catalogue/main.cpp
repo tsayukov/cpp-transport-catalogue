@@ -2,8 +2,8 @@
 
 #include "reader.h"
 #include "transport_catalogue.h"
-#include "input_reader.h"
-#include "stat_reader.h"
+#include "request_handler.h"
+#include "json_reader.h"
 
 #include <iostream>
 
@@ -14,6 +14,7 @@ int main() {
 
     TransportCatalogue transport_catalogue;
     query::Handler handler(transport_catalogue);
-    query::input::ProcessQueries(reader::GetAllQueries(std::cin), transport_catalogue);
-    query::output::ProcessQueries(reader::GetAllQueries(std::cin), std::cout, handler);
+    auto queries = reader::GetAllQueries<reader::From::Json>(std::cin);
+    query::ProcessBaseQueries(queries, transport_catalogue);
+    query::ProcessStatQueries(queries, std::cout, handler);
 }

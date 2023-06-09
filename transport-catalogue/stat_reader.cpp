@@ -43,7 +43,7 @@ std::ostream& PrintStopInfo(std::ostream& output, const TransportCatalogue::Stop
     return output << stop_info << '\n';
 }
 
-void ProcessQueries(std::vector<query::Any>&& queries, std::ostream& output, const Handler& handler) {
+void ProcessQueries(reader::ResultType<reader::From::Cli>&& queries, std::ostream& output, const Handler& handler) {
     for (auto& query : queries) {
         if (query.GetTag() == Tag::BusInfo) {
             const auto& bus_info = handler.GetBusInfo(query.GetData<Tag::BusInfo>().bus_name);

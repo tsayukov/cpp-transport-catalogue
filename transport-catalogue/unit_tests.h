@@ -92,19 +92,19 @@ namespace query::tests {
 inline void TestParseStopCreation() {
     {
         const std::string_view text = "Stop A: 0, 0"sv;
-        const auto query = Parse(text).GetData<Tag::StopCreation>();
+        const auto query = from_cli::Parse(text).GetData<Tag::StopCreation>();
         const auto answer = Query<Tag::StopCreation>{ "A"s, geo::Coordinates(), {} };
         ASSERT((tie(query.stop_name, query.coordinates)) == (tie(answer.stop_name, answer.coordinates)));
     }
     {
         const std::string_view text = "Stop Stop 4A: 55.60, 0.25"sv;
-        const auto query = Parse(text).GetData<Tag::StopCreation>();
+        const auto query = from_cli::Parse(text).GetData<Tag::StopCreation>();
         const auto answer = Query<Tag::StopCreation>{ "Stop 4A"s, geo::Coordinates(55.60, 0.25), {} };
         ASSERT((tie(query.stop_name, query.coordinates)) == (tie(answer.stop_name, answer.coordinates)));
     }
     {
         const std::string_view text = "Stop Stop 4A: +55.60, -0.25"sv;
-        const auto query = Parse(text).GetData<Tag::StopCreation>();
+        const auto query = from_cli::Parse(text).GetData<Tag::StopCreation>();
         const auto answer = Query<Tag::StopCreation>{ "Stop 4A"s, geo::Coordinates(55.60, -0.25), {} };
         ASSERT((tie(query.stop_name, query.coordinates)) == (tie(answer.stop_name, answer.coordinates)));
     }
@@ -114,14 +114,14 @@ inline void TestParseBusCreation() {
     using RouteView = Query<Tag::BusCreation>::RouteView;
     {
         const std::string_view text = "Bus 145: Stop > Stop 1"sv;
-        const auto query = Parse(text).GetData<Tag::BusCreation>();
+        const auto query = from_cli::Parse(text).GetData<Tag::BusCreation>();
         const auto answer = Query<Tag::BusCreation>{ "145"s, RouteView::Full, {"Stop"s, "Stop 1"s} };
         ASSERT((tie(query.bus_name, query.route_view, query.stops))
                == (tie(answer.bus_name, answer.route_view, answer.stops)));
     }
     {
         const std::string_view text = "Bus 145 express: Stop > Stop 1 > Stop 2 F > Stop 3"sv;
-        const auto query = Parse(text).GetData<Tag::BusCreation>();
+        const auto query = from_cli::Parse(text).GetData<Tag::BusCreation>();
         const auto answer = Query<Tag::BusCreation>{
             "145 express"s, RouteView::Full,
             {"Stop"s, "Stop 1"s, "Stop 2 F"s, "Stop 3"s} };
@@ -130,7 +130,7 @@ inline void TestParseBusCreation() {
     }
     {
         const std::string_view text = "Bus 145 express: Stop - Stop 1 - Stop 2 F - Stop 3"sv;
-        const auto query = Parse(text).GetData<Tag::BusCreation>();
+        const auto query = from_cli::Parse(text).GetData<Tag::BusCreation>();
         const auto answer = Query<Tag::BusCreation>{
                 "145 express"s, RouteView::Half,
                 {"Stop"s, "Stop 1"s, "Stop 2 F"s, "Stop 3"s} };
@@ -142,13 +142,13 @@ inline void TestParseBusCreation() {
 inline void TestParseBusInfo() {
     {
         const std::string_view text = "Bus 145"sv;
-        const auto query = Parse(text).GetData<Tag::BusInfo>();
+        const auto query = from_cli::Parse(text).GetData<Tag::BusInfo>();
         const auto answer = Query<Tag::BusInfo>{ "145"s };
         ASSERT(query.bus_name == answer.bus_name);
     }
     {
         const std::string_view text = "Bus 145 express"sv;
-        const auto query = Parse(text).GetData<Tag::BusInfo>();
+        const auto query = from_cli::Parse(text).GetData<Tag::BusInfo>();
         const auto answer = Query<Tag::BusInfo>{ "145 express"s };
         ASSERT(query.bus_name == answer.bus_name);
     }
@@ -167,9 +167,8 @@ namespace reader::tests {
 using namespace query;
 
 inline void TestReadQuery() {
-    std::istringstream input("Stop A: 0, 0"s, std::ios_base::in);
-    const auto [any_query, is_read_successful] = ReadQuery(input);
-    ASSERT(is_read_successful);
+    std::istringstream input("1\nStop A: 0, 0"s, std::ios_base::in);
+    const auto any_query = std::move(GetAllQueries<From::Cli>(input).front());
     const auto& query = any_query.GetData<Tag::StopCreation>();
     const auto answer = Query<Tag::StopCreation>{ "A"s, geo::Coordinates(), {} };
     ASSERT((tie(query.stop_name, query.coordinates)) == (tie(answer.stop_name, answer.coordinates)));
@@ -177,12 +176,14 @@ inline void TestReadQuery() {
 
 inline void TestReadQueries() {
     using RouteView = Query<Tag::BusCreation>::RouteView;
+
     std::istringstream input(
+            "3\n"
             "Stop A: 0, 0\n"
             "Bus 145 express: Stop > Stop 1 > Stop 2 F > Stop 3\n"
             "Bus 145\n"s,
             std::ios_base::in);
-    auto queries = ReadQueries(input, 3);
+    const auto queries = GetAllQueries<From::Cli>(input);
 
     const auto& query_1 = queries[0].GetData<Tag::StopCreation>();
     const auto answer_1 = Query<Tag::StopCreation>{ "A"s, geo::Coordinates(), {} };
