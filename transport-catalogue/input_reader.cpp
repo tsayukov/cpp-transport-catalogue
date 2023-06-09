@@ -22,18 +22,15 @@ void Process<Tag::BusCreation>(Query<Tag::BusCreation>& query, TransportCatalogu
     Bus bus;
     bus.name = std::move(query.bus_name);
 
-    using RouteView = Query<Tag::BusCreation>::RouteView;
-    const auto num_stops = (query.route_view == RouteView::Full) ? query.stops.size() : query.stops.size() * 2 - 1;
-    bus.stops.reserve(num_stops);
+    bus.route_type = query.route_type;
+
+    bus.stops.reserve(query.stops.size());
     std::transform(
             query.stops.cbegin(), query.stops.cend(),
             std::back_inserter(bus.stops),
             [&transport_catalogue](const auto& stop_name) {
                 return transport_catalogue.FindStopBy(stop_name).value();
             });
-    if (query.route_view == RouteView::Half) {
-        std::copy(bus.stops.crbegin() + 1, bus.stops.crend(), std::back_inserter(bus.stops));
-    }
     transport_catalogue.AddBus(std::move(bus));
 }
 

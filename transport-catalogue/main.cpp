@@ -19,7 +19,8 @@ int main() {
 
     auto queries = reader::GetAllQueries<reader::From::Json>(std::cin);
     query::ProcessBaseQueries(queries, transport_catalogue);
-    query::ProcessRenderSettings(queries, renderer);
+//    query::ProcessRenderSettings(queries, renderer);
+    query::ProcessStatQueries(queries, std::cout, handler);
 
-    handler.RenderMap().Render(std::cout);
+//    handler.RenderMap().Render(std::cout);
 }

@@ -16,8 +16,14 @@ struct Stop {
 };
 
 struct Bus {
+    enum class RouteType {
+        Full,
+        Half,
+    };
+
     std::string name;
     std::vector<const Stop*> stops;
+    RouteType route_type;
 };
 
 using StopPtr = const Stop*;

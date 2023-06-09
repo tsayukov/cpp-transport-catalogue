@@ -68,8 +68,7 @@ Any Parse<Tag::BusCreation>(SplitView split_view) {
     query.bus_name = std::string(bus_name);
 
     const auto [sep, _] = split_view.CanSplit('>', '-');
-    using RouteView = Query<Tag::BusCreation>::RouteView;
-    query.route_view = (sep == '>') ? RouteView::Full : RouteView::Half;
+    query.route_type = (sep == '>') ? Bus::RouteType::Full : Bus::RouteType::Half;
 
     while (!split_view.Empty()) {
         const auto stop_name = split_view.NextStrippedSubstrBefore(sep);
@@ -96,9 +95,15 @@ Parser::Parser(const json::Document& document) noexcept
 
 Parser::Result&& Parser::GetResult() {
     const auto& root_map = document_.GetRoot().AsMap();
-    ParseBaseQueries(root_map.at("base_requests"s).AsArray());
-    ParseStatQueries(root_map.at("stat_requests"s).AsArray());
-    ParseRenderSettings(root_map.at("render_settings"s).AsMap());
+    if (auto iter = root_map.find("base_requests"s); iter != root_map.end()) {
+        ParseBaseQueries(iter->second.AsArray());
+    }
+    if (auto iter = root_map.find("stat_requests"s); iter != root_map.end()) {
+        ParseStatQueries(iter->second.AsArray());
+    }
+    if (auto iter = root_map.find("render_settings"s); iter != root_map.end()) {
+        ParseRenderSettings(iter->second.AsMap());
+    }
     return std::move(result_);
 }
 
@@ -210,8 +215,7 @@ void Parser::ParseQuery(const json::Map& map, ParseVariant<Tag::BusCreation>) {
     Query<Tag::BusCreation> query;
     query.bus_name = map.at("name"s).AsString();
 
-    using RouteView = Query<Tag::BusCreation>::RouteView;
-    query.route_view = map.at("is_roundtrip"s).AsBool() ? RouteView::Full : RouteView::Half;
+    query.route_type = map.at("is_roundtrip"s).AsBool() ? Bus::RouteType::Full : Bus::RouteType::Half;
 
     for (const auto& node : map.at("stops"s).AsArray()) {
         const auto& stop_name = node.AsString();

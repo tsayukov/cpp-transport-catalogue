@@ -31,9 +31,11 @@ void TransportCatalogue::AddBus(Bus&& bus) {
         auto iter = stop_statistics_.find(stop_ptr);
         if (iter != stop_statistics_.end()) {
             iter->second.buses.emplace_back(bus_ptr);
+            iter->second.is_buses_unique_and_ordered = false;
         } else {
             StopInfo stop_info{};
             stop_info.buses.emplace_back(bus_ptr);
+            stop_info.is_buses_unique_and_ordered = false;
             stop_statistics_.emplace(stop_ptr, std::move(stop_info));
         }
     }
@@ -157,19 +159,18 @@ struct KahanFloatingPointAddition {
 }
 
 const TransportCatalogue::BusInfo& TransportCatalogue::ComputeBusStatistics(const Bus& bus) const {
-    constexpr unsigned int stops_buses_factor = 2;
-
     auto [iter, _] = bus_statistics_.emplace(&bus, BusInfo{});
 
     BusInfo& bus_info = iter->second;
 
     std::unordered_set<const Stop*> unique_stops;
-    unique_stops.reserve(bus_info.stops_count / stops_buses_factor);
+    unique_stops.reserve(bus.stops.size());
 
     details::KahanFloatingPointAddition double_sum_route_length;
     details::KahanFloatingPointAddition double_sum_geo_length;
 
-    for (std::size_t i = 0; i < bus.stops.size() - 1; ++i) {
+    const auto stops_size = bus.stops.size();
+    for (std::size_t i = 0; i < stops_size - 1; ++i) {
         unique_stops.emplace(bus.stops[i]);
 
         auto distance = GetDistance(*bus.stops[i], *bus.stops[i + 1]);
@@ -178,8 +179,18 @@ const TransportCatalogue::BusInfo& TransportCatalogue::ComputeBusStatistics(cons
         auto geo_distance = GetGeoDistance(*bus.stops[i], *bus.stops[i + 1]);
         bus_info.geo_length = double_sum_geo_length(geo_distance);
     }
+    unique_stops.emplace(bus.stops.back());
 
-    bus_info.stops_count = bus.stops.size();
+    if (bus.route_type == Bus::RouteType::Half) {
+        bus_info.geo_length *= 2.0;
+
+        for (std::size_t i = stops_size - 1; i > 0; --i) {
+            auto distance = GetDistance(*bus.stops[i], *bus.stops[i - 1]);
+            bus_info.route_length = double_sum_route_length(distance);
+        }
+    }
+
+    bus_info.stops_count = (bus.route_type == Bus::RouteType::Full) ? bus.stops.size() : bus.stops.size() * 2 - 1;
     bus_info.unique_stops_count = unique_stops.size();
     return bus_info;
 }

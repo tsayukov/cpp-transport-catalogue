@@ -63,6 +63,11 @@ svg::Document MapRenderer::Render(std::unordered_set<StopPtr>&& active_stops,
         for (StopPtr stop_ptr : stops) {
             route.AddPoint(projector(stop_ptr->coordinates));
         }
+        if (bus_ptr->route_type == Bus::RouteType::Half) {
+            for (auto iter = ++stops.crbegin(); iter != stops.crend(); ++iter) {
+                route.AddPoint(projector((*iter)->coordinates));
+            }
+        }
 
         document.Add(std::move(route));
     }

@@ -109,13 +109,8 @@ struct Query<Tag::StopCreation> {
 
 template<>
 struct Query<Tag::BusCreation> {
-    enum class RouteView {
-        Full,
-        Half,
-    };
-
     std::string bus_name;
-    RouteView route_view;
+    Bus::RouteType route_type;
     std::vector<std::string> stops;
 };
 

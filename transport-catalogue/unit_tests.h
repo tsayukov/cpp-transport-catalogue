@@ -113,31 +113,30 @@ inline void TestParseStopCreation() {
 }
 
 inline void TestParseBusCreation() {
-    using RouteView = Query<Tag::BusCreation>::RouteView;
     {
         const std::string_view text = "Bus 145: Stop > Stop 1"sv;
         const auto query = from_cli::Parse(text).GetData<Tag::BusCreation>();
-        const auto answer = Query<Tag::BusCreation>{ "145"s, RouteView::Full, {"Stop"s, "Stop 1"s} };
-        ASSERT((tie(query.bus_name, query.route_view, query.stops))
-               == (tie(answer.bus_name, answer.route_view, answer.stops)));
+        const auto answer = Query<Tag::BusCreation>{ "145"s, Bus::RouteType::Full, {"Stop"s, "Stop 1"s} };
+        ASSERT((tie(query.bus_name, query.route_type, query.stops))
+               == (tie(answer.bus_name, answer.route_type, answer.stops)));
     }
     {
         const std::string_view text = "Bus 145 express: Stop > Stop 1 > Stop 2 F > Stop 3"sv;
         const auto query = from_cli::Parse(text).GetData<Tag::BusCreation>();
         const auto answer = Query<Tag::BusCreation>{
-            "145 express"s, RouteView::Full,
+            "145 express"s, Bus::RouteType::Full,
             {"Stop"s, "Stop 1"s, "Stop 2 F"s, "Stop 3"s} };
-        ASSERT((tie(query.bus_name, query.route_view, query.stops))
-               == (tie(answer.bus_name, answer.route_view, answer.stops)));
+        ASSERT((tie(query.bus_name, query.route_type, query.stops))
+               == (tie(answer.bus_name, answer.route_type, answer.stops)));
     }
     {
         const std::string_view text = "Bus 145 express: Stop - Stop 1 - Stop 2 F - Stop 3"sv;
         const auto query = from_cli::Parse(text).GetData<Tag::BusCreation>();
         const auto answer = Query<Tag::BusCreation>{
-                "145 express"s, RouteView::Half,
+                "145 express"s, Bus::RouteType::Half,
                 {"Stop"s, "Stop 1"s, "Stop 2 F"s, "Stop 3"s} };
-        ASSERT((tie(query.bus_name, query.route_view, query.stops))
-               == (tie(answer.bus_name, answer.route_view, answer.stops)));
+        ASSERT((tie(query.bus_name, query.route_type, query.stops))
+               == (tie(answer.bus_name, answer.route_type, answer.stops)));
     }
 }
 
@@ -177,8 +176,6 @@ inline void TestReadQuery() {
 }
 
 inline void TestReadQueries() {
-    using RouteView = Query<Tag::BusCreation>::RouteView;
-
     std::istringstream input(
             "3\n"
             "Stop A: 0, 0\n"
@@ -193,10 +190,10 @@ inline void TestReadQueries() {
 
     const auto& query_2 = queries[1].GetData<Tag::BusCreation>();
     const auto answer_2 = Query<Tag::BusCreation>{
-            "145 express"s, RouteView::Full,
+            "145 express"s, Bus::RouteType::Full,
             {"Stop"s, "Stop 1"s, "Stop 2 F"s, "Stop 3"s} };
-    ASSERT((tie(query_2.bus_name, query_2.route_view, query_2.stops))
-           == (tie(answer_2.bus_name, answer_2.route_view, answer_2.stops)));
+    ASSERT((tie(query_2.bus_name, query_2.route_type, query_2.stops))
+           == (tie(answer_2.bus_name, answer_2.route_type, answer_2.stops)));
 
     const auto& query_3 = queries[2].GetData<Tag::BusInfo>();
     const auto answer_3 = Query<Tag::BusInfo>{ "145"s };
