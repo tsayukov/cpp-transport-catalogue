@@ -18,7 +18,7 @@ namespace str_view_handler {
 [[nodiscard]] std::string_view RightStrip(std::string_view text) noexcept;
 [[nodiscard]] std::string_view Strip(std::string_view text) noexcept;
 
-class SplitView {
+class SplitView final {
 public:
     using size_type = std::string_view::size_type;
 

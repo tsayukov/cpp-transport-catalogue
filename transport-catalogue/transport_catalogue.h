@@ -56,10 +56,10 @@ public:
     [[nodiscard]] std::optional<const StopInfo*> GetStopInfo(std::string_view stop_name) const;
 
     struct BusInfo {
-        unsigned int stops_count;
-        unsigned int unique_stops_count;
-        geo::Meter route_length;
-        geo::Meter geo_length;
+        unsigned int stops_count = 0;
+        unsigned int unique_stops_count = 0;
+        geo::Meter route_length = geo::Meter(0.0);
+        geo::Meter geo_length = geo::Meter(0.0);
     };
 
     [[nodiscard]] std::optional<const BusInfo*> GetBusInfo(std::string_view bus_name) const;

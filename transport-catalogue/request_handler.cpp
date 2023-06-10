@@ -1,7 +1,5 @@
 #include "request_handler.h"
 
-#include <unordered_set>
-
 namespace transport_catalogue::query {
 
 Handler::Handler(const TransportCatalogue& database, const renderer::MapRenderer& renderer) noexcept
@@ -19,14 +17,19 @@ std::optional<const TransportCatalogue::StopInfo*> Handler::GetStopInfo(std::str
 
 svg::Document Handler::RenderMap() const {
     auto [all_stops_begin, all_stops_end] = database_.GetAllStops();
-    std::unordered_set<StopPtr> active_stops;
-    active_stops.reserve(std::distance(all_stops_begin, all_stops_end));
+    std::vector<StopPtr> stops;
+    stops.reserve(std::distance(all_stops_begin, all_stops_end));
     for (; all_stops_begin != all_stops_end; ++all_stops_begin) {
         if (auto stop_info = GetStopInfo(all_stops_begin->name);
                 stop_info.has_value() && !(stop_info.value()->buses.empty())) {
-            active_stops.emplace(&*all_stops_begin);
+            stops.emplace_back(&*all_stops_begin);
         }
     }
+    std::sort(
+            stops.begin(), stops.end(),
+            [](StopPtr lhs, StopPtr rhs) noexcept {
+                return lhs->name < rhs->name;
+            });
 
     auto [all_buses_begin, all_buses_end] = database_.GetAllBuses();
     std::vector<BusPtr> buses;
@@ -43,7 +46,7 @@ svg::Document Handler::RenderMap() const {
                 return lhs->name < rhs->name;
             });
 
-    return renderer_.Render(std::move(active_stops), std::move(buses));
+    return renderer_.Render(stops, buses);
 }
 
 } // namespace transport_catalogue::query

@@ -160,8 +160,10 @@ struct KahanFloatingPointAddition {
 
 const TransportCatalogue::BusInfo& TransportCatalogue::ComputeBusStatistics(const Bus& bus) const {
     auto [iter, _] = bus_statistics_.emplace(&bus, BusInfo{});
-
     BusInfo& bus_info = iter->second;
+    if (bus.stops.empty()) {
+        return bus_info;
+    }
 
     std::unordered_set<const Stop*> unique_stops;
     unique_stops.reserve(bus.stops.size());

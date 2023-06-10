@@ -75,30 +75,50 @@ private:
 };
 
 struct Settings {
-    struct Offset {
-        double dx, dy;
-    };
-
     double width, height;
     double padding;
     double line_width;
     double stop_radius;
     double underlayer_width;
     int bus_label_font_size, stop_label_font_size;
-    Offset bus_label_offset, stop_label_offset;
+    svg::Point bus_label_offset, stop_label_offset;
     svg::color::Color underlayer_color;
     std::vector<svg::color::Color> color_palette;
+};
+
+struct Templates {
+    svg::Polyline route_;
+
+    svg::Text underlayer_bus_name;
+    svg::Text bus_name_;
+
+    svg::Circle stop_;
+
+    svg::Text underlayer_stop_name_;
+    svg::Text stop_name_;
 };
 
 class MapRenderer final {
 public:
     void Initialize(Settings settings);
 
-    svg::Document Render(std::unordered_set<StopPtr>&& active_stops,
-                         std::vector<BusPtr>&& sorted_buses) const;
+    [[nodiscard]] svg::Document Render(const std::vector<StopPtr>& sorted_active_stops,
+                                       const std::vector<BusPtr>& sorted_buses) const;
 
 private:
     std::optional<Settings> settings_;
+    Templates templates_;
+
+    SphereProjector MakeProjector(const std::vector<StopPtr>& sorted_active_stops) const;
+
+    void RenderRoutes(svg::Document& document, const SphereProjector& projector,
+                      const std::vector<BusPtr>& sorted_buses) const;
+    void RenderBusNames(svg::Document& document, const SphereProjector& projector,
+                        const std::vector<BusPtr>& sorted_buses) const;
+    void RenderStops(svg::Document& document, const SphereProjector& projector,
+                     const std::vector<StopPtr>& sorted_active_stops) const;
+    void RenderStopNames(svg::Document& document, const SphereProjector& projector,
+                         const std::vector<StopPtr>& sorted_active_stops) const;
 };
 
 } // namespace transport_catalogue::renderer

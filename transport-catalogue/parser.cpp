@@ -161,19 +161,19 @@ void Parser::ParseRenderSettings(const json::Map& map) {
     check_attribute("bus_label_font_size"s, rs.bus_label_font_size, 0, 100'000);
 
     const json::Array& bus_label_offset = map.at("bus_label_offset"s).AsArray();
-    rs.bus_label_offset.dx = bus_label_offset[0].AsDouble();
-    check_attribute("bus_label_offset.dx"s, rs.bus_label_offset.dx, -100'000.0, 100'000.0);
-    rs.bus_label_offset.dy = bus_label_offset[1].AsDouble();
-    check_attribute("bus_label_offset.dy"s, rs.bus_label_offset.dy, -100'000.0, 100'000.0);
+    rs.bus_label_offset.x = bus_label_offset[0].AsDouble();
+    check_attribute("bus_label_offset.x"s, rs.bus_label_offset.x, -100'000.0, 100'000.0);
+    rs.bus_label_offset.y = bus_label_offset[1].AsDouble();
+    check_attribute("bus_label_offset.y"s, rs.bus_label_offset.y, -100'000.0, 100'000.0);
 
     rs.stop_label_font_size = map.at("stop_label_font_size"s).AsInt();
     check_attribute("stop_label_font_size"s, rs.stop_label_font_size, 0, 100'000);
 
     const json::Array& stop_label_offset = map.at("stop_label_offset"s).AsArray();
-    rs.stop_label_offset.dx = stop_label_offset[0].AsDouble();
-    check_attribute("stop_label_offset.dx"s, rs.stop_label_offset.dx, -100'000.0, 100'000.0);
-    rs.stop_label_offset.dy = stop_label_offset[1].AsDouble();
-    check_attribute("stop_label_offset.dy"s, rs.stop_label_offset.dy, -100'000.0, 100'000.0);
+    rs.stop_label_offset.x = stop_label_offset[0].AsDouble();
+    check_attribute("stop_label_offset.x"s, rs.stop_label_offset.x, -100'000.0, 100'000.0);
+    rs.stop_label_offset.y = stop_label_offset[1].AsDouble();
+    check_attribute("stop_label_offset.y"s, rs.stop_label_offset.y, -100'000.0, 100'000.0);
 
     rs.underlayer_width = map.at("underlayer_width"s).AsDouble();
     check_attribute("underlayer_width"s, rs.underlayer_width, 0.0, 100'000.0);
