@@ -19,6 +19,7 @@ enum class Tag {
     StopInfo,
     BusInfo,
     RenderSettings,
+    RenderMap,
 };
 
 template<Tag>
@@ -127,6 +128,10 @@ struct Query<Tag::BusInfo> {
 template<>
 struct Query<Tag::RenderSettings> {
     renderer::Settings settings;
+};
+
+template<>
+struct Query<Tag::RenderMap> {
 };
 
 namespace tests {

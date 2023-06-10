@@ -1,8 +1,9 @@
 /// \file
-/// \todo add a description
+/// Process JSON queries to fill TransportCatalogue database and get JSON output
 
 #pragma once
 
+#include "svg.h"
 #include "json.h"
 #include "reader.h"
 #include "input_reader.h"
@@ -30,5 +31,8 @@ template<>
 template<>
 [[nodiscard]] json::Node AsJsonNode<std::optional<const TransportCatalogue::BusInfo*>>(
         int id, std::optional<const TransportCatalogue::BusInfo*> bus_info);
+
+template<>
+[[nodiscard]] json::Node AsJsonNode<const svg::Document&>(int id, const svg::Document& document);
 
 } // namespace transport_catalogue::query

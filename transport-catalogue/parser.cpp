@@ -125,6 +125,8 @@ void Parser::ParseStatQueries(const json::Array& array) {
             ParseQuery(query_map, ParseVariant<Tag::StopInfo>{});
         } else if (query_map.at("type"s) == "Bus"s) {
             ParseQuery(query_map, ParseVariant<Tag::BusInfo>{});
+        } else if (query_map.at("type"s) == "Map"s) {
+            result_.stat_queries_.emplace_back(query_map.at("id"s).AsInt(), query::Any(Query<Tag::RenderMap>{}));
         }
     }
 }

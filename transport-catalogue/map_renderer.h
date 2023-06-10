@@ -1,5 +1,5 @@
 /// \file
-/// \todo add a description
+/// Rendering transport routes into SVG
 
 #pragma once
 
