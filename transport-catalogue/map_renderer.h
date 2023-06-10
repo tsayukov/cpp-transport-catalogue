@@ -9,7 +9,9 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <functional>
 #include <iostream>
+#include <numeric>
 #include <optional>
 #include <vector>
 #include <unordered_set>
@@ -102,8 +104,73 @@ class MapRenderer final {
 public:
     void Initialize(Settings settings);
 
-    [[nodiscard]] svg::Document Render(const std::vector<StopPtr>& sorted_active_stops,
-                                       const std::vector<BusPtr>& sorted_buses) const;
+    template<typename BusesIter>
+    [[nodiscard]] svg::Document Render(BusesIter bus_first, BusesIter bus_last) const {
+        if (!settings_.has_value()) {
+            using namespace std::string_literals;
+            throw std::runtime_error("MapRenderer must be initialized"s);
+        }
+
+        const std::vector<BusPtr> sorted_buses = std::invoke([bus_first, bus_last] {
+            std::vector<BusPtr> buses;
+            buses.reserve(std::distance(bus_first, bus_last));
+            std::transform(
+                    bus_first, bus_last,
+                    std::back_inserter(buses),
+                    [](const Bus& bus) noexcept {
+                        return &bus;
+                    });
+            std::sort(
+                    buses.begin(), buses.end(),
+                    [](BusPtr lhs, BusPtr rhs) noexcept {
+                        return lhs->name < rhs->name;
+                    });
+
+            return buses;
+        });
+
+        const std::vector<StopPtr> sorted_active_stops = std::invoke([&sorted_buses] {
+            const std::size_t size = std::accumulate(
+                    sorted_buses.cbegin(), sorted_buses.cend(),
+                    std::size_t(0),
+                    [](std::size_t acc, BusPtr bus_ptr) {
+                        return acc + bus_ptr->stops.size();
+                    });
+
+            std::vector<StopPtr> stops;
+            stops.reserve(size);
+            for (BusPtr bus_ptr : sorted_buses) {
+                for (StopPtr stop_ptr : bus_ptr->stops) {
+                    stops.push_back(stop_ptr);
+                }
+            }
+
+            std::sort(
+                    stops.begin(), stops.end(),
+                    [](StopPtr lhs, StopPtr rhs) {
+                        return lhs->name < rhs->name;
+                    });
+            auto begin_to_remove = std::unique(
+                    stops.begin(), stops.end(),
+                    [](StopPtr lhs, StopPtr rhs) {
+                        return lhs->name == rhs->name;
+                    });
+            stops.erase(begin_to_remove, stops.end());
+
+            return stops;
+        });
+
+        SphereProjector projector = MakeProjector(sorted_active_stops);
+
+        svg::Document document;
+
+        RenderRoutes(document, projector, sorted_buses);
+        RenderBusNames(document, projector, sorted_buses);
+        RenderStops(document, projector, sorted_active_stops);
+        RenderStopNames(document, projector, sorted_active_stops);
+
+        return document;
+    }
 
 private:
     std::optional<Settings> settings_;

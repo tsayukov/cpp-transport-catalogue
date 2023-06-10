@@ -64,24 +64,6 @@ void MapRenderer::Initialize(Settings settings) {
         .SetStrokeLineJoin(svg::StrokeLineJoin::ROUND);
 }
 
-svg::Document MapRenderer::Render(const std::vector<StopPtr>& sorted_active_stops,
-                                  const std::vector<BusPtr>& sorted_buses) const {
-    if (!settings_.has_value()) {
-        throw std::runtime_error("MapRenderer must be initialized"s);
-    }
-
-    SphereProjector projector = MakeProjector(sorted_active_stops);
-
-    svg::Document document;
-
-    RenderRoutes(document, projector, sorted_buses);
-    RenderBusNames(document, projector, sorted_buses);
-    RenderStops(document, projector, sorted_active_stops);
-    RenderStopNames(document, projector, sorted_active_stops);
-
-    return document;
-}
-
 SphereProjector MapRenderer::MakeProjector(const std::vector<StopPtr>& sorted_active_stops) const {
     std::vector<geo::Coordinates> all_coordinates;
     all_coordinates.reserve(sorted_active_stops.size());

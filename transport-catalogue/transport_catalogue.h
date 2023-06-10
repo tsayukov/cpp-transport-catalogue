@@ -36,7 +36,6 @@ public:
     [[nodiscard]] std::optional<StopPtr> FindStopBy(std::string_view stop_name) const;
     [[nodiscard]] std::optional<BusPtr> FindBusBy(std::string_view bus_name) const;
 
-
     [[nodiscard]] StopConstIters GetAllStops() const noexcept;
     [[nodiscard]] BusConstIters GetAllBuses() const noexcept;
 
