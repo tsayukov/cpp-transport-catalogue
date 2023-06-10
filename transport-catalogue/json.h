@@ -25,7 +25,7 @@ public:
 
 using Value = std::variant<std::nullptr_t, bool, int, double, std::string, Array, Map>;
 
-class Node : Value {
+class Node : private Value {
 public:
     using Value::variant;
 
