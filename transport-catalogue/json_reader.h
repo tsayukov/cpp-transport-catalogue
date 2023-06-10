@@ -21,18 +21,8 @@ void ProcessRenderSettings(reader::ResultType<reader::From::Json>& queries, rend
 
 void ProcessStatQueries(reader::ResultType<reader::From::Json>& queries, std::ostream& output, const Handler& handler);
 
-template<typename ConvertibleType>
-[[nodiscard]] json::Node AsJsonNode(int id, ConvertibleType) = delete;
-
-template<>
-[[nodiscard]] json::Node AsJsonNode<std::optional<const TransportCatalogue::StopInfo*>>(
-        int id, std::optional<const TransportCatalogue::StopInfo*> stop_info);
-
-template<>
-[[nodiscard]] json::Node AsJsonNode<std::optional<const TransportCatalogue::BusInfo*>>(
-        int id, std::optional<const TransportCatalogue::BusInfo*> bus_info);
-
-template<>
-[[nodiscard]] json::Node AsJsonNode<const svg::Document&>(int id, const svg::Document& document);
+[[nodiscard]] json::Node AsJsonNode(int id, std::optional<const TransportCatalogue::StopInfo*> stop_info);
+[[nodiscard]] json::Node AsJsonNode(int id, std::optional<const TransportCatalogue::BusInfo*> bus_info);
+[[nodiscard]] json::Node AsJsonNode(int id, const svg::Document& document);
 
 } // namespace transport_catalogue::query

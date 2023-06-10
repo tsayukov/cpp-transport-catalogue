@@ -21,20 +21,18 @@ void ProcessStatQueries(reader::ResultType<reader::From::Json>& queries, std::os
     for (auto& [id, query] : queries.stat_queries_) {
         if (query.GetTag() == Tag::BusInfo) {
             auto bus_info = handler.GetBusInfo(query.GetData<Tag::BusInfo>().bus_name);
-            array.push_back(AsJsonNode<std::optional<const TransportCatalogue::BusInfo*>>(id, bus_info));
+            array.push_back(AsJsonNode(id, bus_info));
         } else if (query.GetTag() == Tag::StopInfo) {
             auto stop_info = handler.GetStopInfo(query.GetData<Tag::StopInfo>().stop_name);
-            array.push_back(AsJsonNode<std::optional<const TransportCatalogue::StopInfo*>>(id, stop_info));
+            array.push_back(AsJsonNode(id, stop_info));
         } else if (query.GetTag() == Tag::RenderMap) {
-            array.push_back(AsJsonNode<const svg::Document&>(id, handler.RenderMap()));
+            array.push_back(AsJsonNode(id, handler.RenderMap()));
         }
     }
     json::Print(json::Document(json::Node(std::move(array))), output);
 }
 
-template<>
-json::Node AsJsonNode<std::optional<const TransportCatalogue::StopInfo*>>(
-        int id, std::optional<const TransportCatalogue::StopInfo*> stop_info) {
+json::Node AsJsonNode(int id, std::optional<const TransportCatalogue::StopInfo*> stop_info) {
     json::Map map;
     map.emplace("request_id"s, json::Node(id));
     if (!stop_info.has_value()) {
@@ -56,9 +54,7 @@ json::Node AsJsonNode<std::optional<const TransportCatalogue::StopInfo*>>(
     return map;
 }
 
-template<>
-json::Node AsJsonNode<std::optional<const TransportCatalogue::BusInfo*>>(
-        int id, std::optional<const TransportCatalogue::BusInfo*> bus_info) {
+json::Node AsJsonNode(int id, std::optional<const TransportCatalogue::BusInfo*> bus_info) {
     json::Map map;
     map.emplace("request_id"s, json::Node(id));
     if (!bus_info.has_value()) {
@@ -82,8 +78,7 @@ json::Node AsJsonNode<std::optional<const TransportCatalogue::BusInfo*>>(
     return map;
 }
 
-template<>
-json::Node AsJsonNode<const svg::Document&>(int id, const svg::Document& document) {
+json::Node AsJsonNode(int id, const svg::Document& document) {
     std::ostringstream str_output;
     document.Render(str_output);
 

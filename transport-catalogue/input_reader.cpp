@@ -5,20 +5,17 @@
 
 namespace transport_catalogue::query::input {
 
-template<>
-void Process<Tag::StopCreation>(Query<Tag::StopCreation>& query, TransportCatalogue& transport_catalogue) {
+void Process(Query<Tag::StopCreation>& query, TransportCatalogue& transport_catalogue) {
     transport_catalogue.AddStop({ std::move(query.stop_name), query.coordinates });
 }
 
-template<>
-void Process<Tag::StopDistances>(Query<Tag::StopDistances>& query, TransportCatalogue& transport_catalogue) {
+void Process(Query<Tag::StopDistances>& query, TransportCatalogue& transport_catalogue) {
     for (const auto& [to_stop, distance] : query.distances_to_stops) {
         transport_catalogue.SetDistance(query.from_stop_name, to_stop, distance);
     }
 }
 
-template<>
-void Process<Tag::BusCreation>(Query<Tag::BusCreation>& query, TransportCatalogue& transport_catalogue) {
+void Process(Query<Tag::BusCreation>& query, TransportCatalogue& transport_catalogue) {
     Bus bus;
     bus.name = std::move(query.bus_name);
 
