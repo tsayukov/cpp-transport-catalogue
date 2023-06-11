@@ -29,6 +29,8 @@ class Node final : private Value {
 public:
     using Value::variant;
 
+    /* implicit */ Node(Value value);
+
     [[nodiscard]] bool IsNull() const noexcept;
     [[nodiscard]] bool IsBool() const noexcept;
     [[nodiscard]] bool IsInt() const noexcept;
@@ -48,7 +50,7 @@ public:
     [[nodiscard]] bool operator==(const Node& rhs) const noexcept;
     [[nodiscard]] bool operator!=(const Node& rhs) const noexcept;
 
-    [[nodiscard]] const Value& GetValue() noexcept;
+    [[nodiscard]] Value& GetValue() noexcept;
     [[nodiscard]] const Value& GetValue() const noexcept;
 
 private:

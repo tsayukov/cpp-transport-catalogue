@@ -33,59 +33,67 @@ void ProcessStatQueries(reader::ResultType<reader::From::Json>& queries, std::os
 }
 
 json::Node AsJsonNode(int id, std::optional<const TransportCatalogue::StopInfo*> stop_info) {
-    json::Map map;
-    map.emplace("request_id"s, json::Node(id));
     if (!stop_info.has_value()) {
-        map.emplace("error_message"s, json::Node("not found"s));
-        return map;
+        return json::Builder{}
+                .StartDict()
+                    .Key("request_id"s).Value(id)
+                    .Key("error_message"s).Value("not found"s)
+                .EndDict()
+                .Build();
     }
 
     const auto& buses = stop_info.value()->buses;
-    json::Array bus_array;
-    bus_array.reserve(buses.size());
-    std::transform(
-            buses.cbegin(), buses.cend(),
-            std::back_inserter(bus_array),
-            [](BusPtr bus_ptr) {
-                return bus_ptr->name;
-            });
-    map.emplace("buses"s, json::Node(std::move(bus_array)));
-
-    return map;
+    return json::Builder{}
+            .StartDict()
+                .Key("request_id"s).Value(id)
+                .Key("buses"s)
+                    .Value(std::invoke([&buses] {
+                        json::Array bus_array;
+                        bus_array.reserve(buses.size());
+                        std::transform(
+                                buses.cbegin(), buses.cend(),
+                                std::back_inserter(bus_array),
+                                [](BusPtr bus_ptr) {
+                                    return bus_ptr->name;
+                                });
+                        return bus_array;
+                    }))
+            .EndDict()
+            .Build();
 }
 
 json::Node AsJsonNode(int id, std::optional<const TransportCatalogue::BusInfo*> bus_info) {
-    json::Map map;
-    map.emplace("request_id"s, json::Node(id));
     if (!bus_info.has_value()) {
-        map.emplace("error_message"s, json::Node("not found"s));
-        return map;
+        return json::Builder{}
+                .StartDict()
+                    .Key("request_id"s).Value(id)
+                    .Key("error_message"s).Value("not found"s)
+                .EndDict()
+                .Build();
     }
 
     auto bus_stats_ptr = bus_info.value();
-    const int stop_count = static_cast<int>(bus_stats_ptr->stops_count);
-    map.emplace("stop_count"s, json::Node(stop_count));
-
-    const int unique_stops_count = static_cast<int>(bus_stats_ptr->unique_stops_count);
-    map.emplace("unique_stop_count"s, json::Node(unique_stops_count));
-
-    const double route_length = bus_stats_ptr->route_length;
-    map.emplace("route_length"s, json::Node(route_length));
-
-    const double curvature = bus_stats_ptr->route_length / bus_stats_ptr->geo_length;
-    map.emplace("curvature"s, json::Node(curvature));
-
-    return map;
+    return json::Builder{}
+            .StartDict()
+                .Key("request_id"s).Value(id)
+                .Key("stop_count"s).Value(static_cast<int>(bus_stats_ptr->stops_count))
+                .Key("unique_stop_count"s).Value(static_cast<int>(bus_stats_ptr->unique_stops_count))
+                .Key("route_length"s).Value(bus_stats_ptr->route_length)
+                .Key("curvature"s).Value(bus_stats_ptr->route_length / bus_stats_ptr->geo_length)
+            .EndDict()
+            .Build();
 }
 
 json::Node AsJsonNode(int id, const svg::Document& document) {
     std::ostringstream str_output;
     document.Render(str_output);
 
-    json::Map map;
-    map.emplace("request_id"s, id);
-    map.emplace("map", str_output.str());
-    return map;
+    return json::Builder{}
+        .StartDict()
+            .Key("request_id"s).Value(id)
+            .Key("map"s).Value(str_output.str())
+        .EndDict()
+        .Build();
 }
 
 } // namespace transport_catalogue::query

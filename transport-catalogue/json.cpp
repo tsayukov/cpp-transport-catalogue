@@ -273,6 +273,10 @@ bool TrySkipWsAndReadNextChar(std::istream& input, char& ch) {
 
 // Node
 
+Node::Node(Value value)
+        : Value(std::move(value)) {
+}
+
 bool Node::IsNull() const noexcept {
     return std::holds_alternative<std::nullptr_t>(*this);
 }
@@ -341,7 +345,7 @@ bool Node::operator!=(const Node& rhs) const noexcept {
     return !(*this == rhs);
 }
 
-const Value& Node::GetValue() noexcept {
+Value& Node::GetValue() noexcept {
     return *static_cast<Value*>(this);
 }
 
