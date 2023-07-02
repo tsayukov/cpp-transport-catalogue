@@ -3,25 +3,44 @@
 
 #pragma once
 
+#include "number_wrapper.h"
+
 namespace geo {
 
-using Degree = double;
-using Radian = double;
-using Meter = double;
+using namespace number_wrapper;
+
+class Degree final
+        : public number_wrapper::Base<double, Degree,
+                Equal<Degree>, Ordering<Degree>,
+                UnaryPlus<Degree>, UnaryMinus<Degree>,
+                Add<Degree>, Subtract<Degree>,
+                Multiply<Degree, double>, Divide<Degree, double>, Divide<Degree, Degree, double>> {
+public:
+    using Base::Base;
+
+    [[nodiscard]] constexpr WrappedType AsRadian() const noexcept;
+};
+
+class Meter final
+        : public number_wrapper::Base<double, Meter,
+                Equal<Meter>, Ordering<Meter>,
+                UnaryPlus<Meter>,
+                Add<Meter>, Subtract<Meter>,
+                Multiply<Meter, double>, Divide<Meter, double>, Divide<Meter, Meter, double>> {
+public:
+    using Base::Base;
+};
 
 struct Coordinates {
-    Degree lat = 0.0;
-    Degree lng = 0.0;
+    Degree lat;
+    Degree lng;
 
     Coordinates() noexcept = default;
     Coordinates(Degree lat, Degree lng) noexcept;
 
     [[nodiscard]] bool operator==(const Coordinates& other) const noexcept;
-
     [[nodiscard]] bool operator!=(const Coordinates& other) const noexcept;
 };
-
-[[nodiscard]] constexpr Radian AsRadian(Degree deg) noexcept;
 
 [[nodiscard]] Meter ComputeDistance(Coordinates from, Coordinates to) noexcept;
 
