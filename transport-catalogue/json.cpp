@@ -170,7 +170,7 @@ bool TrySkipWsAndReadNextChar(std::istream& input, char& ch) {
         if (ch == ']') {
             break;
         } else if (ch != ',') {
-            throw ParsingError("Pairs of a key and value must be separated by a comma"s);
+            throw ParsingError("Pairs of a key and value_ must be separated by a comma"s);
         }
 
         TrySkipWsAndReadNextChar(input, ch);
@@ -183,7 +183,7 @@ bool TrySkipWsAndReadNextChar(std::istream& input, char& ch) {
 }
 
 [[nodiscard]] Node LoadDict(std::istream& input) {
-    Map result;
+    Dict result;
 
     char ch;
     TrySkipWsAndReadNextChar(input, ch);
@@ -205,7 +205,7 @@ bool TrySkipWsAndReadNextChar(std::istream& input, char& ch) {
 
         TrySkipWsAndReadNextChar(input, ch);
         if (ch != ':') {
-            throw ParsingError("Dictionary key and value must be separated by a colon"s);
+            throw ParsingError("Dictionary key and value_ must be separated by a colon"s);
         }
 
         result.emplace(std::move(key), LoadNode(input));
@@ -214,7 +214,7 @@ bool TrySkipWsAndReadNextChar(std::istream& input, char& ch) {
         if (ch == '}') {
             break;
         } else if (ch != ',') {
-            throw ParsingError("Pairs of a key and value must be separated by a comma"s);
+            throw ParsingError("Pairs of a key and value_ must be separated by a comma"s);
         }
 
         TrySkipWsAndReadNextChar(input, ch);
@@ -305,8 +305,8 @@ bool Node::IsArray() const noexcept {
     return std::holds_alternative<Array>(*this);
 }
 
-bool Node::IsMap() const noexcept {
-    return std::holds_alternative<Map>(*this);
+bool Node::IsDict() const noexcept {
+    return std::holds_alternative<Dict>(*this);
 }
 
 bool Node::AsBool() const {
@@ -333,8 +333,8 @@ const Array& Node::AsArray() const {
     return TryGetAs<const Array&>();
 }
 
-const Map& Node::AsMap() const {
-    return TryGetAs<const Map&>();
+const Dict& Node::AsDict() const {
+    return TryGetAs<const Dict&>();
 }
 
 bool Node::operator==(const Node& rhs) const noexcept {
@@ -468,7 +468,7 @@ void PrintValue::operator()(const Array& array) {
     output << "]"sv;
 }
 
-void PrintValue::operator()(const Map& dict) {
+void PrintValue::operator()(const Dict& dict) {
     auto& output = context.output;
 
     output << "{"sv;

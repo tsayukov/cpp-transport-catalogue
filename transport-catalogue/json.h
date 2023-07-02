@@ -15,7 +15,7 @@ namespace json {
 
 class Node;
 
-using Map = std::map<std::string, Node>;
+using Dict = std::map<std::string, Node>;
 using Array = std::vector<Node>;
 
 class ParsingError : public std::runtime_error {
@@ -23,7 +23,7 @@ public:
     using runtime_error::runtime_error;
 };
 
-using Value = std::variant<std::nullptr_t, bool, int, double, std::string, Array, Map>;
+using Value = std::variant<std::nullptr_t, bool, int, double, std::string, Array, Dict>;
 
 class Node final : private Value {
 public:
@@ -38,14 +38,14 @@ public:
     [[nodiscard]] bool IsPureDouble() const noexcept;
     [[nodiscard]] bool IsString() const noexcept;
     [[nodiscard]] bool IsArray() const noexcept;
-    [[nodiscard]] bool IsMap() const noexcept;
+    [[nodiscard]] bool IsDict() const noexcept;
 
     [[nodiscard]] bool AsBool() const;
     [[nodiscard]] int AsInt() const;
     [[nodiscard]] double AsDouble() const;
     [[nodiscard]] const std::string& AsString() const;
     [[nodiscard]] const Array& AsArray() const;
-    [[nodiscard]] const Map& AsMap() const;
+    [[nodiscard]] const Dict& AsDict() const;
 
     [[nodiscard]] bool operator==(const Node& rhs) const noexcept;
     [[nodiscard]] bool operator!=(const Node& rhs) const noexcept;
@@ -105,7 +105,7 @@ struct PrintValue {
     void operator()(double value);
     void operator()(const std::string& value);
     void operator()(const Array& array);
-    void operator()(const Map& dict);
+    void operator()(const Dict& dict);
 };
 
 void Print(const Document& document, std::ostream& output);

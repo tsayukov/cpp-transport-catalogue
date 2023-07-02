@@ -18,7 +18,7 @@ Builder& Builder::BaseContext::GetBuilder() noexcept {
 }
 
 Builder::DictValueContext Builder::BaseContext::Key(std::string key) {
-    if (!GetNodes().back().IsMap()) {
+    if (!GetNodes().back().IsDict()) {
         throw std::logic_error("There is no dictionary for key insertion"s);
     }
 
@@ -40,12 +40,12 @@ Builder::DictItemContext Builder::BaseContext::StartDict() {
         throw std::logic_error("There is no array for dictionary insertion"s);
     }
 
-    GetNodes().emplace_back(Map{});
+    GetNodes().emplace_back(Dict{});
     return GetBuilder();
 }
 
 Builder::BaseContext Builder::BaseContext::EndDict() {
-    if (!GetNodes().back().IsMap()) {
+    if (!GetNodes().back().IsDict()) {
         throw std::logic_error("There is no dictionary to close"s);
     }
 
@@ -118,7 +118,7 @@ Builder::DictItemContext Builder::DictValueContext::Value(json::Value value) {
     GetNodes().pop_back();
 
     Node& dict = GetNodes().back();
-    std::get<Map>(dict.GetValue()).emplace(std::move(key), std::move(value));
+    std::get<Dict>(dict.GetValue()).emplace(std::move(key), std::move(value));
     return GetBuilder();
 }
 
@@ -142,7 +142,7 @@ Builder::BaseContext Builder::Value(json::Value value) {
 }
 
 Builder::DictItemContext Builder::StartDict() {
-    nodes_.emplace_back(Map{});
+    nodes_.emplace_back(Dict{});
     return *this;
 }
 
