@@ -169,7 +169,6 @@ class Object {
 public:
     virtual ~Object() = default;
     void Render(const RenderContext& context) const;
-
 private:
     virtual void RenderObject(const RenderContext& context) const = 0;
 };
@@ -180,7 +179,6 @@ class Circle final : public Object, public PathProps<Circle> {
 public:
     Circle& SetCenter(Point center) noexcept;
     Circle& SetRadius(double radius) noexcept;
-
 private:
     void RenderObject(const RenderContext& context) const override;
 
@@ -193,7 +191,6 @@ private:
 class Polyline final : public Object, public PathProps<Polyline> {
 public:
     Polyline& AddPoint(Point point);
-
 private:
     void RenderObject(const RenderContext& context) const override;
 
@@ -210,7 +207,6 @@ public:
     Text& SetFontFamily(std::string font_family);
     Text& SetFontWeight(std::string font_weight);
     Text& SetData(std::string data);
-
 private:
     Point start_ = {0.0, 0.0};
     Point offset_ = {0.0, 0.0};
@@ -238,8 +234,8 @@ public:
 
 class Drawable {
 public:
-    virtual void Draw(ObjectContainer& container) const = 0;
     virtual ~Drawable() = default;
+    virtual void Draw(ObjectContainer& container) const = 0;
 };
 
 class Document final : public ObjectContainer {

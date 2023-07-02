@@ -283,5 +283,4 @@ void Document::Render(std::ostream& output) const {
     context.RenderIndent();
     output << "</svg>"sv;
 }
-
 }  // namespace svg
