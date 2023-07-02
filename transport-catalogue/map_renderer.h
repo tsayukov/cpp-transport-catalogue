@@ -4,8 +4,8 @@
 #pragma once
 
 #include "geo.h"
-#include "svg.h"
 #include "domain.h"
+#include "svg.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -38,24 +38,24 @@ public:
                     return lhs.lng < rhs.lng;
                 });
         min_lng_ = left_it->lng;
-        const double max_lng = right_it->lng;
+        const geo::Degree max_lng = right_it->lng;
 
         const auto [bottom_it, top_it] = std::minmax_element(
                 points_begin, points_end,
                 [](auto lhs, auto rhs) noexcept {
                     return lhs.lat < rhs.lat;
                 });
-        const double min_lat = bottom_it->lat;
+        const geo::Degree min_lat = bottom_it->lat;
         max_lat_ = top_it->lat;
 
         std::optional<double> width_zoom;
-        if (!IsZero(max_lng - min_lng_)) {
-            width_zoom = (max_width - 2 * padding) / (max_lng - min_lng_);
+        if (!IsZero((max_lng - min_lng_).Get())) {
+            width_zoom = (max_width - 2 * padding) / (max_lng - min_lng_).Get();
         }
 
         std::optional<double> height_zoom;
-        if (!IsZero(max_lat_ - min_lat)) {
-            height_zoom = (max_height - 2 * padding) / (max_lat_ - min_lat);
+        if (!IsZero((max_lat_ - min_lat).Get())) {
+            height_zoom = (max_height - 2 * padding) / (max_lat_ - min_lat).Get();
         }
 
         if (width_zoom && height_zoom) {
@@ -70,9 +70,9 @@ public:
     svg::Point operator()(geo::Coordinates coords) const;
 
 private:
-    double padding_;
-    double min_lng_ = 0;
-    double max_lat_ = 0;
+    geo::Degree padding_;
+    geo::Degree min_lng_{0};
+    geo::Degree max_lat_{0};
     double zoom_factor_ = 0;
 };
 

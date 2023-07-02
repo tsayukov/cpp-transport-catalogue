@@ -13,8 +13,8 @@ bool IsZero(double value) {
 }
 
 svg::Point SphereProjector::operator()(geo::Coordinates coords) const {
-    return {(coords.lng - min_lng_) * zoom_factor_ + padding_,
-            (max_lat_ - coords.lat) * zoom_factor_ + padding_ };
+    return {((coords.lng - min_lng_) * zoom_factor_ + padding_).Get(),
+            ((max_lat_ - coords.lat) * zoom_factor_ + padding_).Get()};
 }
 
 // MapRenderer
