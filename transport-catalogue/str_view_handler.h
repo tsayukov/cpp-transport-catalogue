@@ -76,22 +76,6 @@ template<typename ...CharType>
     return { '\0', false };
 }
 
-template<typename T>
-std::optional<T> ParseAs(std::string_view text) noexcept {
-    static_assert(std::is_integral_v<T> || std::is_floating_point_v<T>);
-
-    if (text.size() > 1 && text[0] == '+' && text[1] != '-') {
-        text.remove_prefix(1);
-    }
-    T value;
-    // No way in GCC (C++17)
-    auto result = std::from_chars(text.data(), text.data() + text.size(), value);
-    if (result.ec == std::errc::invalid_argument || result.ec == std::errc::result_out_of_range) {
-        return std::nullopt;
-    }
-    return value;
-}
-
 namespace tests {
 
 inline void TestLeftStrip();
