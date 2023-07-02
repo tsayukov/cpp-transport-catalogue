@@ -2,8 +2,8 @@
 
 #include <iostream>
 #include <map>
-#include <set>
 #include <random>
+#include <set>
 #include <vector>
 
 #define ASSERT_EQUAL(a, b) \
@@ -12,6 +12,12 @@ unit_test_tools::AssertEqualImpl((a), (b), #a, #b, __FILE__, __FUNCTION__, __LIN
 #define ASSERT_EQUAL_HINT(a, b, hint) \
 unit_test_tools::AssertEqualImpl((a), (b), #a, #b, __FILE__, __FUNCTION__, __LINE__, (hint))
 
+#define ASSERT_NOT_EQUAL(a, b) \
+unit_test_tools::AssertNotEqualImpl((a), (b), #a, #b, __FILE__, __FUNCTION__, __LINE__, "")
+
+#define ASSERT_NOT_EQUAL_HINT(a, b, hint) \
+unit_test_tools::AssertNotEqualImpl((a), (b), #a, #b, __FILE__, __FUNCTION__, __LINE__, (hint))
+
 #define ASSERT(expr) \
 unit_test_tools::AssertImpl(static_cast<bool>(expr), #expr, __FILE__, __FUNCTION__, __LINE__, "")
 
@@ -19,7 +25,7 @@ unit_test_tools::AssertImpl(static_cast<bool>(expr), #expr, __FILE__, __FUNCTION
 unit_test_tools::AssertImpl(static_cast<bool>(expr), #expr, __FILE__, __FUNCTION__, __LINE__, (hint))
 
 #define ASSERT_THROW(func, exception)                                                    \
-    using namespace std::string_literals;                                                          \
+    using namespace std::string_literals;                                                \
     try {                                                                                \
         func;                                                                            \
         std::cerr << __FILE__ << "("s << __LINE__ << "): "s << __FUNCTION__ << ": "s;    \
@@ -70,18 +76,6 @@ std::ostream& operator<<(std::ostream& output, const std::pair<F, S>& pair) {
     return output << pair.first << ": "s << pair.second;
 }
 
-//template<typename ...Ts>
-//std::ostream& operator<<(std::ostream& output, const std::tuple<Ts...>& tuple) {
-//    output << "{"s;
-//    if constexpr (sizeof...(Ts) > 0) {
-//        output << std::get<0>(tuple);
-//    }
-//    for (std::size_t i = 1; i < sizeof...(Ts); ++i) {
-//        output << ", "s << std::get<i>(tuple);
-//    }
-//    return output << "}"s;
-//}
-
 template<typename Container>
 std::ostream& PrintContainer(std::ostream& output, const Container& container, const std::string& sep) {
     auto iter = std::begin(container);
@@ -106,6 +100,23 @@ void AssertEqualImpl(const T& t, const U& u, const std::string& t_str_repr, cons
         std::cerr << file_name << "("s << line_number << "): "s << func_name << ": "s;
         std::cerr << "ASSERT_EQUAL("s << t_str_repr << ", "s << u_str_repr << ") failed: "s;
         std::cerr << t << " != "s << u << "."s;
+        if (!hint.empty()) {
+            std::cerr << " Hint: "s << hint;
+        }
+        std::cerr << std::endl;
+        std::abort();
+    }
+}
+
+template<typename T, typename U>
+void AssertNotEqualImpl(const T& t, const U& u, const std::string& t_str_repr, const std::string& u_str_repr,
+                        const std::string& file_name, const std::string& func_name, unsigned line_number,
+                        const std::string& hint) {
+    if (t == u) {
+        std::cerr << std::boolalpha;
+        std::cerr << file_name << "("s << line_number << "): "s << func_name << ": "s;
+        std::cerr << "ASSERT_NOT_EQUAL("s << t_str_repr << ", "s << u_str_repr << ") failed: "s;
+        std::cerr << t << " == "s << u << "."s;
         if (!hint.empty()) {
             std::cerr << " Hint: "s << hint;
         }
