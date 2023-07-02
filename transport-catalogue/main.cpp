@@ -1,24 +1,12 @@
-#include "unit_tests.h"
-
-#include "reader.h"
-#include "transport_catalogue.h"
-#include "map_renderer.h"
 #include "request_handler.h"
-#include "json_reader.h"
-
-#include <iostream>
 
 int main() {
     using namespace transport_catalogue;
 
-    RunAllTests();
-
-    TransportCatalogue transport_catalogue;
+    TransportCatalogue database;
     renderer::MapRenderer renderer;
-    query::Handler handler(transport_catalogue, renderer);
+    router::TransportRouter router;
 
-    auto queries = reader::GetAllQueries<reader::From::Json>(std::cin);
-    query::ProcessBaseQueries(queries, transport_catalogue);
-    query::ProcessRenderSettings(queries, renderer);
-    query::ProcessStatQueries(queries, std::cout, handler);
+    queries::Handler handler(database, renderer, router);
+    handler.ProcessQueries(from::json, std::cin, into::json, std::cout);
 }
