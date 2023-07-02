@@ -15,6 +15,8 @@ struct Stop {
     geo::Coordinates coordinates;
 };
 
+using StopPtr = const Stop*;
+
 struct Bus {
     enum class RouteType {
         Full,
@@ -22,11 +24,10 @@ struct Bus {
     };
 
     std::string name;
-    std::vector<const Stop*> stops;
+    std::vector<StopPtr> stops;
     RouteType route_type;
 };
 
-using StopPtr = const Stop*;
 using BusPtr = const Bus*;
 
 [[nodiscard]] geo::Meter GetGeoDistance(const Stop& from, const Stop& to) noexcept;
