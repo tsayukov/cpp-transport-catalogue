@@ -46,8 +46,11 @@ public:
     [[nodiscard]] TransportCatalogue::StopRange GetAllStops() const noexcept;
     [[nodiscard]] TransportCatalogue::BusRange GetAllBuses() const noexcept;
 
-    [[nodiscard]] std::optional<const TransportCatalogue::BusInfo*> GetBusInfo(std::string_view bus_name) const;
-    [[nodiscard]] std::optional<const TransportCatalogue::StopInfo*> GetStopInfo(std::string_view stop_name) const;
+    using BusInfo = TransportCatalogue::BusInfo;
+    using StopInfo = TransportCatalogue::StopInfo;
+
+    [[nodiscard]] std::optional<const BusInfo*> GetBusInfo(std::string_view bus_name) const;
+    [[nodiscard]] std::optional<const StopInfo*> GetStopInfo(std::string_view stop_name) const;
 
     // Map Renderer methods adapters
 

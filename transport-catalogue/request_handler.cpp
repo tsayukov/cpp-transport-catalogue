@@ -47,11 +47,11 @@ void Handler::SetDistanceBetweenStops(std::string_view from, std::string_view to
     return database_.GetAllBuses();
 }
 
-std::optional<const TransportCatalogue::BusInfo*> Handler::GetBusInfo(std::string_view bus_name) const {
+std::optional<const Handler::BusInfo*> Handler::GetBusInfo(std::string_view bus_name) const {
     return database_.GetBusInfo(bus_name);
 }
 
-std::optional<const TransportCatalogue::StopInfo*> Handler::GetStopInfo(std::string_view stop_name) const {
+std::optional<const Handler::StopInfo*> Handler::GetStopInfo(std::string_view stop_name) const {
     return database_.GetStopInfo(stop_name);
 }
 
