@@ -12,8 +12,8 @@ namespace transport_catalogue::into {
 
 using namespace std::string_view_literals;
 
-using StopInfo = decltype(std::declval<queries::Handler>().GetStopInfo(std::declval<std::string_view>()));
-using BusInfo = decltype(std::declval<queries::Handler>().GetBusInfo(std::declval<std::string_view>()));
+using StopInfo = std::optional<const queries::Handler::StopInfo*>;
+using BusInfo = std::optional<const queries::Handler::BusInfo*>;
 
 std::ostream& operator<<(std::ostream& output, StopInfo stop_info) {
     if (!stop_info.has_value()) {
@@ -69,7 +69,7 @@ const PrintDriver& GetTextPrintDriver(std::ostream& output) {
     return driver;
 }
 
-void ProcessQueries(from::ParseResult parse_result, queries::Handler& handler, Text, std::ostream& output) {
+void ProcessQueries(from::Parser::Result parse_result, queries::Handler& handler, Text, std::ostream& output) {
     const Printer printer(GetTextPrintDriver(output));
     parse_result.ProcessModifyQueries(handler, printer);
     parse_result.ProcessResponseQueries(handler, printer);

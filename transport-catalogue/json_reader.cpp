@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <sstream>
 #include <string_view>
+#include <typeindex>
+#include <typeinfo>
 #include <unordered_map>
 #include <vector>
 
@@ -23,82 +25,121 @@ using namespace std::string_view_literals;
 
 class JsonParser : public Parser {
 public:
-    void Parse(const json::Node& node, std::string_view request_type) {
-        query_type = {};
-        node_ptr_ = &node;
-
-        if (request_type == "base_requests"sv) {
-            std::string_view type = node_ptr_->AsDict().at("type"s).AsString();
-            if (type == "Stop"sv) {
-                query_type = "stop_creation"sv;
-            } else if (type == "Bus"sv) {
-                query_type = "bus_creation"sv;
-            }
-        } else if (request_type == "stat_requests"s) {
-            std::string_view type = node_ptr_->AsDict().at("type"s).AsString();
-            if (type == "Stop"sv) {
-                query_type = "stop_info"sv;
-            } else if (type == "Bus"sv) {
-                query_type = "bus_info"sv;
-            } else if (type == "Map"sv) {
-                query_type = "renderer"sv;
-            } else if (type == "RouteInfo"sv) {
-                query_type = "router"sv;
-            }
-        } else if (request_type == "render_settings"s) {
-            query_type = "renderer_setup"sv;
-        } else if (request_type == "routing_settings"s) {
-            query_type = "router_setup"sv;
-        }
+    JsonParser()
+            : object_getters_({{"name"sv,              &JsonParser::GetName},
+                               {"id"sv,                &JsonParser::GetId},
+                               {"coordinates"sv,       &JsonParser::GetCoordinates},
+                               {"distances"sv,         &JsonParser::GetDistances},
+                               {"stop_names"sv,        &JsonParser::GetStopNames},
+                               {"route_type"sv,        &JsonParser::GetRouteType},
+                               {"renderer_settings"sv, &JsonParser::GetRendererSettings},
+                               {"router_settings"sv,   &JsonParser::GetRouterSettings}}) {
     }
 
-    [[nodiscard]] QueryType GetQueryType() const override {
-        return query_type;
+    void Parse(const json::Document& document) {
+        current_node_ = nullptr;
+        for (const auto& [request_type, nodes] : document.GetRoot().AsDict()) {
+            if (nodes.IsArray()) {
+                for (const auto& node : nodes.AsArray()) {
+                    current_node_ = &node;
+                    const auto query_type_index = GetTypeIndex(request_type);
+                    const auto& factory = queries::QueryFactory::GetFactory(query_type_index);
+                    GetResult().PushBack(factory.Construct(*this));
+                }
+            } else if (nodes.IsDict()) {
+                current_node_ = &nodes;
+                const auto query_type_index = GetTypeIndex(request_type);
+                const auto& factory = queries::QueryFactory::GetFactory(query_type_index);
+                GetResult().PushBack(factory.Construct(*this));
+            }
+        }
     }
 
 private:
-    QueryType query_type;
-    const json::Node* node_ptr_ = nullptr;
+    const json::Node* current_node_ = nullptr;
 
-    [[nodiscard]] std::any GetObject(std::string_view object_name) const override {
-        const auto& dict = node_ptr_->AsDict();
-        if (object_name == "name"sv) {
-            return dict.at("name"s).AsString();
-        } else if (object_name == "id"sv) {
-            return dict.at("id"s).AsInt();
-        } else if (object_name == "coordinates"sv) {
-            const auto latitude = geo::Degree{dict.at("latitude"s).AsDouble()};
-            const auto longitude = geo::Degree{dict.at("longitude"s).AsDouble()};
-            return geo::Coordinates(latitude, longitude);
-        } else if (object_name == "distances"sv) {
-            const auto& map = dict.at("road_distances"s).AsDict();
-            std::unordered_map<std::string, geo::Meter> distances;
-            distances.reserve(map.size());
-            for (const auto& [to_stop_name, node] : map) {
-                const auto distance = geo::Meter{node.AsDouble()};
-                distances.emplace(to_stop_name, distance);
+    using ObjectGetter = std::any(JsonParser::*)() const;
+
+    std::unordered_map<std::string_view, ObjectGetter> object_getters_;
+
+    [[nodiscard]] std::type_index GetTypeIndex(std::string_view request_type) const {
+        const auto& dict = current_node_->AsDict();
+        if (request_type == "base_requests"sv) {
+            const auto& type = dict.at("type");
+            if (type == "Stop"s) {
+                return typeid(Stop);
+            } else if (type == "Bus"s) {
+                return typeid(Bus);
             }
-            return distances;
-        } else if (object_name == "stop_names"sv) {
-            const auto& array = dict.at("stops"s).AsArray();
-            std::vector<std::string> stop_names;
-            stop_names.reserve(array.size());
-            for (const auto& node : array) {
-                const auto& stop_name = node.AsString();
-                stop_names.emplace_back(stop_name);
+        } else if (request_type == "stat_requests"s) {
+            const auto& type = dict.at("type");
+            if (type == "Stop"s) {
+                return typeid(queries::Handler::StopInfo);
+            } else if (type == "Bus"s) {
+                return typeid(queries::Handler::BusInfo);
+            } else if (type == "Map"s) {
+                return typeid(renderer::MapRenderer);
+            } else if (type == "Route"s) {
+                return typeid(router::TransportRouter);
             }
-            return stop_names;
-        } else if (object_name == "route_type"sv) {
-            return dict.at("is_roundtrip"s).AsBool() ? Bus::RouteType::Full : Bus::RouteType::Half;
-        } else if (object_name == "renderer_settings"sv) {
-            return GetRendererSettings(dict);
-        } else if (object_name == "router_settings"sv) {
-            // todo impl
+        } else if (request_type == "render_settings"s) {
+            return typeid(renderer::Settings);
+        } else if (request_type == "routing_settings"s) {
+            return typeid(router::Settings);
         }
-        throw std::invalid_argument("No such type '"s + std::string(object_name) + "'"s);
+        throw std::invalid_argument("No such request type '"s + std::string(request_type) + "'"s);
     }
 
-    static renderer::Settings GetRendererSettings(const json::Dict& dict) {
+    [[nodiscard]] std::any GetObject(std::string_view object_name) const override {
+        const auto f = object_getters_.at(object_name);
+        return (this->*f)();
+    }
+
+    [[nodiscard]] std::any GetName() const {
+        return current_node_->AsDict().at("name"s).AsString();
+    }
+
+    [[nodiscard]] std::any GetId() const {
+        return current_node_->AsDict().at("id"s).AsInt();
+    }
+
+    [[nodiscard]] std::any GetCoordinates() const {
+        const auto& dict = current_node_->AsDict();
+        const auto latitude = geo::Degree{dict.at("latitude"s).AsDouble()};
+        const auto longitude = geo::Degree{dict.at("longitude"s).AsDouble()};
+        return geo::Coordinates(latitude, longitude);
+    }
+
+    [[nodiscard]] std::any GetDistances() const {
+        const auto& dict = current_node_->AsDict();
+        const auto& map = dict.at("road_distances"s).AsDict();
+        std::unordered_map<std::string, geo::Meter> distances;
+        distances.reserve(map.size());
+        for (const auto& [to_stop_name, node] : map) {
+            const auto distance = geo::Meter{node.AsDouble()};
+            distances.emplace(to_stop_name, distance);
+        }
+        return distances;
+    }
+
+    [[nodiscard]] std::any GetStopNames() const {
+        const auto& dict = current_node_->AsDict();
+        const auto& array = dict.at("stops"s).AsArray();
+        std::vector<std::string> stop_names;
+        stop_names.reserve(array.size());
+        for (const auto& node : array) {
+            const auto& stop_name = node.AsString();
+            stop_names.emplace_back(stop_name);
+        }
+        return stop_names;
+    }
+
+    [[nodiscard]] std::any GetRouteType() const {
+        return (current_node_->AsDict().at("is_roundtrip"s).AsBool()) ? Bus::RouteType::Full : Bus::RouteType::Half;
+    }
+
+    [[nodiscard]] std::any GetRendererSettings() const {
+        const auto& dict = current_node_->AsDict();
         renderer::Settings rs;
 
         auto check_attribute = [](const std::string& attribute, auto value, auto min, auto max) {
@@ -155,10 +196,10 @@ private:
             rs.color_palette.push_back(ParseColor(node_color));
         }
 
-        return rs;
+        return std::make_any<renderer::Settings>(std::move(rs));
     }
 
-    static svg::color::Color ParseColor(const json::Node& node) {
+    [[nodiscard]] static svg::color::Color ParseColor(const json::Node& node) {
         if (node.IsString()) {
             return node.AsString();
         } else if (node.IsArray()) {
@@ -204,28 +245,17 @@ private:
             throw std::invalid_argument("Unrecognized color format: expected string, RGB, or RGBA format"s);
         }
     }
+
+    [[nodiscard]] std::any GetRouterSettings() const {
+        // todo impl
+        return {};
+    }
 };
 
-[[nodiscard]] ParseResult ReadQueries(from::Json, std::istream& input) {
+[[nodiscard]] Parser::Result ReadQueries(from::Json, std::istream& input) {
     JsonParser parser;
-    ParseResult result;
-    const json::Document document = json::Load(input);
-    for (const auto& [request_type, nodes] : document.GetRoot().AsDict()) {
-        if (nodes.IsArray()) {
-            for (const auto& node : nodes.AsArray()) {
-                parser.Parse(node, request_type);
-                const auto query_type = parser.GetQueryType();
-                const auto& factory = queries::QueryFactory::GetFactory(query_type);
-                result.PushBack(factory.Construct(parser), parser.GetQueryType());
-            }
-        } else if (nodes.IsDict()) {
-            parser.Parse(nodes, request_type);
-            const auto query_type = parser.GetQueryType();
-            const auto& factory = queries::QueryFactory::GetFactory(query_type);
-            result.PushBack(factory.Construct(parser), parser.GetQueryType());
-        }
-    }
-    return result;
+    parser.Parse(json::Load(input));
+    return parser.ReleaseResult();
 }
 
 } // namespace from
@@ -234,8 +264,8 @@ namespace into {
 
 using namespace std::string_literals;
 
-using StopInfo = decltype(std::declval<queries::Handler>().GetStopInfo(std::declval<std::string_view>()));
-using BusInfo = decltype(std::declval<queries::Handler>().GetBusInfo(std::declval<std::string_view>()));
+using StopInfo = std::optional<const queries::Handler::StopInfo*>;
+using BusInfo = std::optional<const queries::Handler::BusInfo*>;
 
 json::Node StopInfoAsJson(int id, StopInfo stop_info) {
     auto builder = json::Builder{};
@@ -335,11 +365,10 @@ private:
     mutable json::Array array_;
 };
 
-void ProcessQueries(from::ParseResult parse_result, queries::Handler& handler, Json, std::ostream& output) {
+void ProcessQueries(from::Parser::Result parse_result, queries::Handler& handler, Json, std::ostream& output) {
     static const JsonPrintDriver driver(output);
     const Printer printer(driver);
     parse_result.ProcessModifyQueries(handler, printer);
-    parse_result.ProcessSetupQueries(handler, printer);
     parse_result.ProcessResponseQueries(handler, printer);
 }
 

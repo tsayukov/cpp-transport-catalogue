@@ -1,7 +1,6 @@
 #pragma once
 
 #include <any>
-#include <deque>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -12,26 +11,6 @@
 #include <type_traits>
 
 namespace transport_catalogue {
-
-namespace from {
-
-class Parser {
-public:
-    using QueryType = std::string_view;
-
-    virtual ~Parser() = default;
-    virtual QueryType GetQueryType() const = 0;
-
-    template<typename T>
-    T Get(std::string_view object_name) const {
-        return std::any_cast<T>(GetObject(object_name));
-    }
-
-private:
-    virtual std::any GetObject(std::string_view object_name) const = 0;
-};
-
-} // namespace from
 
 namespace into {
 
@@ -48,15 +27,13 @@ public:
 
     template<typename T>
     void RegisterPrintOperation(PrintOperation&& op) {
-        type_to_print_operation_.emplace(std::type_index(typeid(std::decay_t<T>)), std::move(op));
+        type_to_print_operation_.emplace(std::type_index(typeid(T)), std::move(op));
     }
 
     template<typename T>
     void Print(const T& value) const {
         const auto type = std::type_index(typeid(std::decay_t<T>));
-        const auto& foo = type_to_print_operation_.at(type);
-        foo(output, &value);
-//        type_to_print_operation_.at(type)(output, &value);
+        type_to_print_operation_.at(type)(output, &value);
     }
 
 private:
@@ -88,6 +65,48 @@ public:
     virtual ~Query() = default;
     virtual void ProcessAndPrint(Handler& handler, const into::Printer& printer) const = 0;
 };
+
+} // namespace queries
+
+namespace from {
+
+class Parser {
+public:
+    virtual ~Parser() = default;
+
+    template<typename T>
+    [[nodiscard]] T Get(std::string_view object_name) const {
+        return std::any_cast<T>(GetObject(object_name));
+    }
+
+    class Result {
+    public:
+        void ProcessModifyQueries(queries::Handler& handler, const into::Printer& printer);
+        void ProcessResponseQueries(queries::Handler& handler, const into::Printer& printer);
+
+        void PushBack(std::unique_ptr<queries::Query>&& query_ptr);
+    private:
+        using Queries = std::vector<std::unique_ptr<queries::Query>>;
+
+        Queries modify_queries_;
+        Queries response_queries_;
+    };
+
+    [[nodiscard]] Result&& ReleaseResult() noexcept {
+        return std::move(result_);
+    }
+
+protected:
+    [[nodiscard]] Result& GetResult() noexcept;
+private:
+    Result result_;
+
+    [[nodiscard]] virtual std::any GetObject(std::string_view object_name) const = 0;
+};
+
+} // namespace from
+
+namespace queries {
 
 class ModifyQuery : public Query {
 public:
@@ -127,28 +146,9 @@ public:
     virtual ~QueryFactory() = default;
     [[nodiscard]] virtual std::unique_ptr<Query> Construct(const from::Parser& parser) const = 0;
 
-    static const QueryFactory& GetFactory(std::string_view query_name);
+    static const QueryFactory& GetFactory(std::type_index index);
 };
 
 } // namespace queries
-
-namespace from {
-
-using Queries = std::deque<std::unique_ptr<queries::Query>>;
-
-class ParseResult {
-public:
-    void ProcessModifyQueries(queries::Handler& handler, const into::Printer& printer);
-    void ProcessSetupQueries(queries::Handler& handler, const into::Printer& printer);
-    void ProcessResponseQueries(queries::Handler& handler, const into::Printer& printer);
-
-    void PushBack(std::unique_ptr<queries::Query>&& query, Parser::QueryType query_type);
-private:
-    Queries modify_queries_;
-    Queries setup_queries_;
-    Queries response_queries_;
-};
-
-} // namespace from
 
 } // namespace transport_catalogue

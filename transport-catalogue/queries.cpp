@@ -124,8 +124,14 @@ public:
             , route_type_(route_type) {
     }
 
+    ~BusCreation() {
+        postponed_operation();
+    }
+
     void Process(Handler& handler) const override {
-        handler.AddBus(std::string(GetName()), stop_names_, route_type_);
+        postponed_operation = [this, &handler] {
+            handler.AddBus(std::string(GetName()), stop_names_, route_type_);
+        };
     }
 
     class Factory : public QueryFactory {
@@ -141,6 +147,8 @@ public:
 private:
     std::vector<std::string> stop_names_;
     Bus::RouteType route_type_;
+
+    mutable std::function<void()> postponed_operation;
 };
 
 class MapRendererSetup : public SetupQuery<renderer::Settings> {
@@ -164,7 +172,7 @@ class TransportRouterSetup : public SetupQuery<router::Settings> {
 public:
     using SetupQuery<router::Settings>::SetupQuery;
 
-    void Process(Handler& handler) const override {
+    void Process(Handler&) const override {
         // todo setup TransportRouter
     }
 
@@ -253,7 +261,7 @@ public:
 
 // QueryFactory
 
-const QueryFactory& QueryFactory::GetFactory(std::string_view query_name) {
+const QueryFactory& QueryFactory::GetFactory(std::type_index index) {
     static const StopCreation::Factory stop_creation;
     static const BusCreation::Factory bus_creation;
     static const MapRendererSetup::Factory renderer_setup;
@@ -263,55 +271,59 @@ const QueryFactory& QueryFactory::GetFactory(std::string_view query_name) {
     static const MapRenderer::Factory renderer;
     static const Router::Factory router;
 
-    static const std::unordered_map<std::string_view, const QueryFactory&> factories = {
-            {"stop_creation"sv,  stop_creation},
-            {"bus_creation"sv,   bus_creation},
-            {"renderer_setup"sv, renderer_setup},
-            {"router_setup"sv,   router_setup},
-            {"stop_info"sv,      stop_info},
-            {"bus_info"sv,       bus_info},
-            {"renderer"sv,       renderer},
-            {"router"sv,         router},
+    static const std::unordered_map<std::type_index, const QueryFactory&> factories = {
+            {std::type_index(typeid(Stop)), stop_creation},
+            {std::type_index(typeid(Bus)), bus_creation},
+            {std::type_index(typeid(renderer::Settings)), renderer_setup},
+            {std::type_index(typeid(router::Settings)), router_setup},
+            {std::type_index(typeid(queries::Handler::StopInfo)), stop_info},
+            {std::type_index(typeid(queries::Handler::BusInfo)), bus_info},
+            {std::type_index(typeid(renderer::MapRenderer)), renderer},
+            {std::type_index(typeid(router::TransportRouter)), router},
     };
-
-    return factories.at(query_name);
+    return factories.at(index);
 }
 
 } // namespace queries
 
 namespace from {
 
-void ParseResult::ProcessModifyQueries(queries::Handler& handler, const into::Printer& printer) {
+void Parser::Result::ProcessModifyQueries(queries::Handler& handler, const into::Printer& printer) {
     for (const auto& query : modify_queries_) {
         query->ProcessAndPrint(handler, printer);
     }
     modify_queries_.clear();
 }
 
-void ParseResult::ProcessSetupQueries(queries::Handler& handler, const into::Printer& printer) {
-    for (const auto& query : setup_queries_) {
-        query->ProcessAndPrint(handler, printer);
-    }
-}
-
-void ParseResult::ProcessResponseQueries(queries::Handler& handler, const into::Printer& printer) {
+void Parser::Result::ProcessResponseQueries(queries::Handler& handler, const into::Printer& printer) {
     for (const auto& query : response_queries_) {
         query->ProcessAndPrint(handler, printer);
     }
 }
 
-void ParseResult::PushBack(std::unique_ptr<queries::Query>&& query, Parser::QueryType query_type) {
+void Parser::Result::PushBack(std::unique_ptr<queries::Query>&& query_ptr) {
     using namespace std::string_view_literals;
 
-    if (query_type == "stop_creation"sv) {
-        modify_queries_.push_front(std::move(query));
-    } else if (query_type == "bus_creation"sv) {
-        modify_queries_.push_back(std::move(query));
-    } else if (query_type == "renderer_setup"sv || query_type == "router_setup"sv) {
-        setup_queries_.push_back(std::move(query));
+    const auto& query = *query_ptr;
+    const auto& query_type = typeid(query);
+    if (query_type == typeid(queries::StopCreation)
+            || query_type == typeid(queries::BusCreation)
+            || query_type == typeid(queries::MapRendererSetup)
+            || query_type == typeid(queries::TransportRouterSetup)) {
+        modify_queries_.push_back(std::move(query_ptr));
+    } else if (query_type == typeid(queries::StopInfoQuery)
+            || query_type == typeid(queries::BusInfoQuery)
+            || query_type == typeid(queries::MapRenderer)
+            || query_type == typeid(queries::Router)) {
+        response_queries_.push_back(std::move(query_ptr));
     } else {
-        response_queries_.push_back(std::move(query));
+        using namespace std::string_literals;
+        throw std::invalid_argument("Query must be either ModifyQuery or ResponseQuery"s);
     }
+}
+
+Parser::Result& Parser::GetResult() noexcept {
+    return result_;
 }
 
 } // namespace from
