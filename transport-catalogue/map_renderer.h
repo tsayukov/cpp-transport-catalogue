@@ -71,8 +71,8 @@ public:
 
 private:
     geo::Degree padding_;
-    geo::Degree min_lng_{0};
-    geo::Degree max_lat_{0};
+    geo::Degree min_lng_;
+    geo::Degree max_lat_;
     double zoom_factor_ = 0;
 };
 
