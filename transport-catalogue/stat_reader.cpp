@@ -2,6 +2,7 @@
 
 #include "geo.h"
 #include "domain.h"
+#include "request_handler.h"
 
 #include <iomanip>
 #include <string_view>
