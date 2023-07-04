@@ -201,9 +201,15 @@ auto Zip(const C1& first_container, const C2& second_container) {
     const auto first_distance = std::distance(first_container.begin(), first_container.end());
     const auto second_distance = std::distance(second_container.begin(), second_container.end());
     const auto distance = std::min(first_distance, second_distance);
-    return ConstRange{ZipIterator{first_container.begin(), second_container.begin()},
-                      ZipIterator{std::next(first_container.begin(), distance),
-                                  std::next(second_container.begin(), distance)}};
+
+    auto first_range_begin = first_container.begin();
+    auto second_range_begin = second_container.begin();
+
+    auto first_range_end = std::next(first_range_begin, distance);
+    auto second_range_end = std::next(second_range_begin, distance);
+
+    return ConstRange{ZipIterator{first_range_begin, second_range_begin},
+                      ZipIterator{first_range_end, second_range_end}};
 }
 
 template<typename C>
