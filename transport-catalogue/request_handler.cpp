@@ -66,8 +66,21 @@ svg::Document Handler::RenderMap() const {
     return renderer_.Render(bus_range.begin(), bus_range.end());
 }
 
-// Transport Router methods adapters
+// Transport Route methods adapters
 
-// todo impl
+void Handler::InitializeRouterSettings(router::Settings settings) {
+    router_.Initialize(settings);
+}
+
+Handler::RouteResult Handler::GetRouteBetweenStops(std::string_view from, std::string_view to) {
+    if (!router_.IsInitialized()) {
+        router_.InitializeRouter(
+                GetAllStops(), GetAllBuses(),
+                [this](std::string_view from_stop, std::string_view to_stop) {
+                    return GetDistanceBetweenStops(from_stop, to_stop);
+                });
+    }
+    return router_.GetRouteBetweenStops(FindStopBy(from).value(), FindStopBy(to).value());
+}
 
 } // namespace transport_catalogue::queries

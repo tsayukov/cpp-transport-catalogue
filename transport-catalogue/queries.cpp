@@ -172,8 +172,8 @@ class TransportRouterSetup : public SetupQuery<router::Settings> {
 public:
     using SetupQuery<router::Settings>::SetupQuery;
 
-    void Process(Handler&) const override {
-        // todo setup TransportRouter
+    void Process(Handler& handler) const override {
+        handler.InitializeRouterSettings(GetSettings());
     }
 
     class Factory : public QueryFactory {
@@ -242,21 +242,31 @@ public:
     };
 };
 
-class Router : public ResponseQuery {
+class Route : public ResponseQuery {
 public:
-    using ResponseQuery::ResponseQuery;
+    Route(int id, std::string from_stop, std::string to_stop)
+            : ResponseQuery(id)
+            , from_stop_(std::move(from_stop))
+            , to_stop_(std::move(to_stop)) {
+    }
 
-    void ProcessAndPrint(Handler&, const into::Printer&) const override {
-        // todo impl
+    void ProcessAndPrint(Handler& handler, const into::Printer& printer) const override {
+        printer.Print(std::make_tuple(GetId(), handler.GetRouteBetweenStops(from_stop_, to_stop_)));
     }
 
     class Factory : public QueryFactory {
     public:
         [[nodiscard]] std::unique_ptr<Query> Construct(const from::Parser& parser) const override {
-            return std::make_unique<Router>(
-                    parser.Get<int>("id"sv));
+            return std::make_unique<Route>(
+                    parser.Get<int>("id"sv),
+                    parser.Get<std::string>("from"sv),
+                    parser.Get<std::string>("to"sv));
         }
     };
+
+private:
+    std::string from_stop_;
+    std::string to_stop_;
 };
 
 // QueryFactory
@@ -269,7 +279,7 @@ const QueryFactory& QueryFactory::GetFactory(std::type_index index) {
     static const StopInfoQuery::Factory stop_info;
     static const BusInfoQuery::Factory bus_info;
     static const MapRenderer::Factory renderer;
-    static const Router::Factory router;
+    static const Route::Factory router;
 
     static const std::unordered_map<std::type_index, const QueryFactory&> factories = {
             {std::type_index(typeid(Stop)), stop_creation},
@@ -314,7 +324,7 @@ void Parser::Result::PushBack(std::unique_ptr<queries::Query>&& query_ptr) {
     } else if (query_type == typeid(queries::StopInfoQuery)
             || query_type == typeid(queries::BusInfoQuery)
             || query_type == typeid(queries::MapRenderer)
-            || query_type == typeid(queries::Router)) {
+            || query_type == typeid(queries::Route)) {
         response_queries_.push_back(std::move(query_ptr));
     } else {
         using namespace std::string_literals;

@@ -6,6 +6,7 @@
 #include "json.h"
 #include "json_builder.h"
 #include "map_renderer.h"
+#include "transport_router.h"
 #include "request_handler.h"
 
 #include <algorithm>
@@ -33,7 +34,9 @@ public:
                                {"stop_names"sv,        &JsonParser::GetStopNames},
                                {"route_type"sv,        &JsonParser::GetRouteType},
                                {"renderer_settings"sv, &JsonParser::GetRendererSettings},
-                               {"router_settings"sv,   &JsonParser::GetRouterSettings}}) {
+                               {"router_settings"sv,   &JsonParser::GetRouterSettings},
+                               {"from"sv,              &JsonParser::GetStartStopName},
+                               {"to"sv,                &JsonParser::GetEndStopName}}) {
     }
 
     void Parse(const json::Document& document) {
@@ -247,8 +250,19 @@ private:
     }
 
     [[nodiscard]] std::any GetRouterSettings() const {
-        // todo impl
-        return {};
+        const auto& dict = current_node_->AsDict();
+        router::Settings rs;
+        rs.bus_wait_time = router::Minute{dict.at("bus_wait_time"s).AsDouble()};
+        rs.bus_velocity = router::KmPerHour{dict.at("bus_velocity"s).AsDouble()};
+        return rs;
+    }
+
+    [[nodiscard]] std::any GetStartStopName() const {
+        return current_node_->AsDict().at("from"s).AsString();
+    }
+
+    [[nodiscard]] std::any GetEndStopName() const {
+        return current_node_->AsDict().at("to"s).AsString();
     }
 };
 
@@ -331,6 +345,54 @@ json::Node SvgAsJson(int id, const svg::Document& document) {
         .Build();
 }
 
+json::Node RouteAsJson(int id, queries::Handler::RouteResult route_result) {
+    auto builder = json::Builder{};
+    auto dict_builder = builder
+            .StartDict()
+                .Key("request_id"s).Value(id);
+
+    if (!route_result.has_value()) {
+        return dict_builder
+                    .Key("error_message"s).Value("not found"s)
+                .EndDict()
+                .Build();
+    }
+
+    const auto& result_items = route_result->items;
+    json::Array items;
+    items.reserve(result_items.size());
+    for (const auto& item : result_items) {
+        json::Node item_node;
+        if (item.IsWaitItem()) {
+            const auto& wait_item = item.GetWaitItem();
+            item_node = json::Builder{}
+                    .StartDict()
+                        .Key("type"s).Value("Wait"s)
+                        .Key("stop_name"s).Value(std::string(wait_item.stop_ptr->name))
+                        .Key("time"s).Value(wait_item.time.Get())
+                    .EndDict()
+                    .Build();
+        } else if (item.IsBusItem()) {
+            const auto& bus_item = item.GetBusItem();
+            item_node = json::Builder{}
+                    .StartDict()
+                        .Key("type"s).Value("Bus"s)
+                        .Key("bus"s).Value(std::string(bus_item.bus_ptr->name))
+                        .Key("span_count"s).Value(static_cast<int>(bus_item.span_count))
+                        .Key("time"s).Value(bus_item.time.Get())
+                    .EndDict()
+                    .Build();
+        }
+        items.emplace_back(std::move(item_node));
+    }
+
+    return dict_builder
+                .Key("total_time"s).Value(route_result->total_time.Get())
+                .Key("items"s).Value(std::move(items))
+            .EndDict()
+            .Build();
+}
+
 class JsonPrintDriver : public PrintDriver {
 public:
     explicit JsonPrintDriver(std::ostream& output)
@@ -346,6 +408,7 @@ public:
         using PrintableStopInfo = std::tuple<int, std::string_view, StopInfo>;
         using PrintableBusInfo = std::tuple<int, std::string_view, BusInfo>;
         using PrintableMap = std::tuple<int, svg::Document>;
+        using PrintableRoute = std::tuple<int, queries::Handler::RouteResult>;
 
         RegisterPrintOperation<PrintableStopInfo>([this](std::ostream&, const void* object) {
             const auto [id, _, stop_info] = *reinterpret_cast<const PrintableStopInfo*>(object);
@@ -358,6 +421,10 @@ public:
         RegisterPrintOperation<PrintableMap>([this](std::ostream&, const void* object) {
             const auto& [id, document] = *reinterpret_cast<const PrintableMap*>(object);
             array_.emplace_back(SvgAsJson(id, document));
+        });
+        RegisterPrintOperation<PrintableRoute>([this](std::ostream&, const void* object) {
+            const auto& [id, route_result] = *reinterpret_cast<const PrintableRoute*>(object);
+            array_.emplace_back(RouteAsJson(id, route_result));
         });
     }
 

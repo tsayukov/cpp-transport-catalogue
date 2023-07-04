@@ -58,9 +58,13 @@ public:
 
     [[nodiscard]] svg::Document RenderMap() const;
 
-    // Transport Router methods adapters
+    // Transport Route methods adapters
 
-    // todo impl
+    void InitializeRouterSettings(router::Settings settings);
+
+    using RouteResult = std::optional<router::TransportRouter::Result>;
+
+    [[nodiscard]] RouteResult GetRouteBetweenStops(std::string_view from, std::string_view to);
 
 private:
     TransportCatalogue& database_;
