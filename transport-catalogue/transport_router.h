@@ -6,6 +6,7 @@
 #include "ranges.h"
 #include "graph.h"
 #include "router.h"
+#include "transport_catalogue.h"
 
 #include <optional>
 #include <stdexcept>
@@ -50,8 +51,7 @@ class TransportRouter final {
 public:
     void Initialize(Settings settings);
 
-    template<typename StopContainer, typename BusContainer, typename DistanceGetter>
-    void InitializeRouter(const StopContainer& stops, const BusContainer& buses, const DistanceGetter& distance_getter);
+    void InitializeRouter(const TransportCatalogue& database);
 
     [[nodiscard]] bool IsInitialized() const noexcept;
 
@@ -111,44 +111,13 @@ private:
     [[nodiscard]] graph::VertexId GetStartDrivingVertexId(StopPtr stop_ptr) const;
 
     template<typename StopContainer, typename DistanceGetter>
-    void AddingEdges(BusPtr bus_ptr, const StopContainer& stops, const DistanceGetter& distance_getter);
+    void AddEdges(BusPtr bus_ptr, const StopContainer& stops, const DistanceGetter& distance_getter);
 
     [[nodiscard]] Result TransformRouteInfoToResult(const graph::Router<Item>::RouteInfo& route_info) const;
 };
 
-template<typename StopContainer, typename BusContainer, typename DistanceGetter>
-void TransportRouter::InitializeRouter(const StopContainer& stops, const BusContainer& buses,
-                                       const DistanceGetter& distance_getter) {
-    static_assert(std::is_same_v<typename StopContainer::value_type, Stop>);
-    static_assert(std::is_same_v<typename BusContainer::value_type, Bus>);
-
-    if (!settings_.has_value()) {
-        using namespace std::string_literals;
-        throw std::logic_error("Settings must be initialized before a router creation"s);
-    }
-
-    graph_ = graph::DirectedWeightedGraph<Item>(std::distance(stops.begin(), stops.end()) * 2);
-
-    for (const Stop& stop : stops) {
-        stop_to_start_waiting_vertex_.emplace(&stop, vertex_to_stop_.size() * 2);
-        vertex_to_stop_.push_back(&stop);
-
-        graph_.AddEdge({GetStartWaitingVertexId(&stop), GetStartDrivingVertexId(&stop),
-                        WaitItem{settings_->bus_wait_time, &stop}});
-    }
-
-    for (const Bus& bus : buses) {
-        AddingEdges(&bus, bus.stops, distance_getter);
-        if (bus.route_type == Bus::RouteType::Half) {
-            AddingEdges(&bus, ranges::Reverse(bus.stops), distance_getter);
-        }
-    }
-
-    router_.emplace(graph::Router<Item>(graph_));
-}
-
 template<typename StopContainer, typename DistanceGetter>
-void TransportRouter::AddingEdges(BusPtr bus_ptr, const StopContainer& stops, const DistanceGetter& distance_getter) {
+void TransportRouter::AddEdges(BusPtr bus_ptr, const StopContainer& stops, const DistanceGetter& distance_getter) {
     static_assert(std::is_same_v<typename StopContainer::value_type, StopPtr>);
 
     unsigned int drop_count = 1;
@@ -157,7 +126,7 @@ void TransportRouter::AddingEdges(BusPtr bus_ptr, const StopContainer& stops, co
         StopPtr from_stop_ptr = stop_ptr;
         unsigned int span_count = 0;
         for (StopPtr to_stop_ptr : ranges::Drop(stops, drop_count)) {
-            distance_acc += distance_getter(from_stop_ptr->name, to_stop_ptr->name).value();
+            distance_acc += distance_getter(from_stop_ptr->name, to_stop_ptr->name);
             const auto total_time = Minute::ComputeTime(distance_acc, settings_->bus_velocity);
             span_count += 1;
             graph_.AddEdge({GetStartDrivingVertexId(stop_ptr), GetStartWaitingVertexId(to_stop_ptr),

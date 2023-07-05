@@ -74,11 +74,7 @@ void Handler::InitializeRouterSettings(router::Settings settings) {
 
 Handler::RouteResult Handler::GetRouteBetweenStops(std::string_view from, std::string_view to) {
     if (!router_.IsInitialized()) {
-        router_.InitializeRouter(
-                GetAllStops(), GetAllBuses(),
-                [this](std::string_view from_stop, std::string_view to_stop) {
-                    return GetDistanceBetweenStops(from_stop, to_stop);
-                });
+        router_.InitializeRouter(database_);
     }
     return router_.GetRouteBetweenStops(FindStopBy(from).value(), FindStopBy(to).value());
 }

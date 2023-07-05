@@ -8,6 +8,37 @@ void TransportRouter::Initialize(Settings settings) {
     settings_ = settings;
 }
 
+void TransportRouter::InitializeRouter(const TransportCatalogue& database) {
+    if (!settings_.has_value()) {
+        using namespace std::string_literals;
+        throw std::logic_error("Settings must be initialized before a router creation"s);
+    }
+
+    const auto& stops = database.GetAllStops();
+    graph_ = graph::DirectedWeightedGraph<Item>(std::distance(stops.begin(), stops.end()) * 2);
+
+    for (const Stop& stop : stops) {
+        stop_to_start_waiting_vertex_.emplace(&stop, vertex_to_stop_.size() * 2);
+        vertex_to_stop_.push_back(&stop);
+
+        graph_.AddEdge({GetStartWaitingVertexId(&stop), GetStartDrivingVertexId(&stop),
+                        WaitItem{settings_->bus_wait_time, &stop}});
+    }
+
+    const auto& buses = database.GetAllBuses();
+    const auto distance_getter = [&database](std::string_view from_stop_name, std::string_view to_stop_name) {
+        return database.GetDistanceBetweenStops(from_stop_name, to_stop_name).value();
+    };
+    for (const Bus& bus : buses) {
+        AddEdges(&bus, bus.stops, distance_getter);
+        if (bus.route_type == Bus::RouteType::Half) {
+            AddEdges(&bus, ranges::Reverse(bus.stops), distance_getter);
+        }
+    }
+
+    router_.emplace(graph::Router<Item>(graph_));
+}
+
 bool TransportRouter::IsInitialized() const noexcept {
     return settings_.has_value() && router_.has_value();
 }
