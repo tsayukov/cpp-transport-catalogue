@@ -11,10 +11,8 @@
 
 namespace number_wrapper {
 
-struct Op {};
-
 template<typename Self, typename Rhs = Self>
-struct Equal : public Op {
+struct Equal {
 
     friend constexpr bool operator==(Self self, Rhs rhs) noexcept {
         return static_cast<typename Self::WrappedType>(self) == static_cast<typename Self::WrappedType>(rhs);
@@ -26,7 +24,7 @@ struct Equal : public Op {
 };
 
 template<typename Self, typename Rhs = Self>
-struct Ordering : public Op {
+struct Ordering {
 
     friend constexpr bool operator<(Self self, Rhs rhs) noexcept {
         return static_cast<typename Self::WrappedType>(self) < static_cast<typename Self::WrappedType>(rhs);
@@ -46,7 +44,7 @@ struct Ordering : public Op {
 };
 
 template<typename Self, typename Out = Self>
-struct UnaryPlus : public Op {
+struct UnaryPlus {
 
     friend constexpr Out operator+(Self self) noexcept {
         return static_cast<Out>(+static_cast<typename Self::WrappedType>(self));
@@ -54,7 +52,7 @@ struct UnaryPlus : public Op {
 };
 
 template<typename Self, typename Out = Self>
-struct UnaryMinus : public Op {
+struct UnaryMinus {
 
     friend constexpr Out operator-(Self self) noexcept {
         return static_cast<Out>(-static_cast<typename Self::WrappedType>(self));
@@ -62,7 +60,7 @@ struct UnaryMinus : public Op {
 };
 
 template<typename Self, typename Out = Self>
-struct Increment : public Op {
+struct Increment {
 
     friend constexpr Out& operator++(Self& self) noexcept {
         ++static_cast<typename Self::WrappedType&>(self);
@@ -77,7 +75,7 @@ struct Increment : public Op {
 };
 
 template<typename Self, typename Out = Self>
-struct Decrement : public Op {
+struct Decrement {
 
     friend constexpr Out& operator--(Self& self) noexcept {
         --static_cast<typename Self::WrappedType&>(self);
@@ -92,7 +90,7 @@ struct Decrement : public Op {
 };
 
 template<typename Self, typename Rhs = Self, typename Out = Self>
-struct Add : public Op {
+struct Add {
 
     friend constexpr Out& operator+=(Self& self, Rhs rhs) noexcept {
         static_cast<typename Self::WrappedType&>(self) += static_cast<typename Self::WrappedType>(rhs);
@@ -106,7 +104,7 @@ struct Add : public Op {
 };
 
 template<typename Self, typename Rhs = Self, typename Out = Self>
-struct Subtract : public Op {
+struct Subtract {
 
     friend constexpr Out& operator-=(Self& self, Rhs rhs) noexcept {
         static_cast<typename Self::WrappedType&>(self) -= static_cast<typename Self::WrappedType>(rhs);
@@ -120,7 +118,7 @@ struct Subtract : public Op {
 };
 
 template<typename Self, typename Rhs = Self, typename Out = Self>
-struct Multiply : public Op {
+struct Multiply {
 
     friend constexpr Out& operator*=(Self& self, Rhs rhs) noexcept {
         static_cast<typename Self::WrappedType&>(self) *= static_cast<typename Self::WrappedType>(rhs);
@@ -134,7 +132,7 @@ struct Multiply : public Op {
 };
 
 template<typename Self, typename Rhs = Self, typename Out = Self>
-struct Divide : public Op {
+struct Divide {
 
     friend constexpr Out& operator/=(Self& self, Rhs rhs) noexcept {
         static_cast<typename Self::WrappedType&>(self) /= static_cast<typename Self::WrappedType>(rhs);
@@ -148,7 +146,7 @@ struct Divide : public Op {
 };
 
 template<typename Self, typename Rhs = Self, typename Out = Self>
-struct Remainder : public Op {
+struct Remainder {
 
     friend constexpr Out& operator%=(Self& self, Rhs rhs) noexcept {
         if constexpr (std::is_floating_point_v<typename Self::WrappedType>) {
@@ -168,7 +166,7 @@ struct Remainder : public Op {
 };
 
 template<typename Self, typename Out = Self>
-struct BitwiseNot : public Op {
+struct BitwiseNot {
 
     friend constexpr Out operator~(Self self) noexcept {
         return static_cast<Out>(~static_cast<typename Self::WrappedType>(self));
@@ -176,7 +174,7 @@ struct BitwiseNot : public Op {
 };
 
 template<typename Self, typename Rhs = Self, typename Out = Self>
-struct BitwiseAnd : public Op {
+struct BitwiseAnd {
 
     friend constexpr Out& operator&=(Self& self, Rhs rhs) noexcept {
         static_cast<typename Self::WrappedType&>(self) &= static_cast<typename Self::WrappedType>(rhs);
@@ -190,7 +188,7 @@ struct BitwiseAnd : public Op {
 };
 
 template<typename Self, typename Rhs = Self, typename Out = Self>
-struct BitwiseOr : public Op {
+struct BitwiseOr {
 
     friend constexpr Out& operator|=(Self& self, Rhs rhs) noexcept {
         static_cast<typename Self::WrappedType&>(self) |= static_cast<typename Self::WrappedType>(rhs);
@@ -204,7 +202,7 @@ struct BitwiseOr : public Op {
 };
 
 template<typename Self, typename Rhs = Self, typename Out = Self>
-struct BitwiseXor : public Op {
+struct BitwiseXor {
 
     friend constexpr Out& operator^=(Self& self, Rhs rhs) noexcept {
         static_cast<typename Self::WrappedType&>(self) ^= static_cast<typename Self::WrappedType>(rhs);
@@ -218,7 +216,7 @@ struct BitwiseXor : public Op {
 };
 
 template<typename Self, typename Rhs = Self, typename Out = Self>
-struct BitwiseLeftShift : public Op {
+struct BitwiseLeftShift {
 
     friend constexpr Out& operator<<=(Self& self, Rhs rhs) noexcept {
         static_cast<typename Self::WrappedType&>(self) <<= static_cast<typename Self::WrappedType>(rhs);
@@ -232,7 +230,7 @@ struct BitwiseLeftShift : public Op {
 };
 
 template<typename Self, typename Rhs = Self, typename Out = Self>
-struct BitwiseRightShift : public Op {
+struct BitwiseRightShift {
 
     friend constexpr Out& operator>>=(Self& self, Rhs rhs) noexcept {
         static_cast<typename Self::WrappedType&>(self) >>= static_cast<typename Self::WrappedType>(rhs);
@@ -251,7 +249,6 @@ public:
     using WrappedType = T;
 
     static_assert(std::is_integral_v<WrappedType> || std::is_floating_point_v<WrappedType>);
-    static_assert((std::is_base_of_v<Op, AllowedOps> && ...));
 
     constexpr explicit Base(WrappedType value = {}) noexcept
             : value_(value) {
