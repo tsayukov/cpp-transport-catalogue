@@ -18,7 +18,6 @@ constexpr Degree::WrappedType Degree::AsRadian() const noexcept {
 Coordinates::Coordinates(Degree lat, Degree lng) noexcept
         : lat(lat)
         , lng(lng) {
-    // todo when do the check?
     assert(lat >= Degree{-90.0} && lat <= Degree{90.0});
     assert(lng >= Degree{-180.0} && lng <= Degree{180.0});
 }
