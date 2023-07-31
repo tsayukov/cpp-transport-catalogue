@@ -4,7 +4,9 @@
 # Cmake files
 cmake-build-debug
 cmake-build-release
-CMakeLists.txt
+
+# protobuf files
+protobuf
 
 # Prerequisites
 *.d
