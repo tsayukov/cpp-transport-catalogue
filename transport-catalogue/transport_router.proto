@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+import "graph.proto";
+
+package transport_router_proto;
+
+message PreviousEdge {
+    uint64 edge_id = 1;
+}
+
+message RouteInternalData {
+    graph_proto.Weight weight = 1;
+    PreviousEdge previous_edge = 2;
+}
+
+message RowRoutesInternalData {
+    repeated RouteInternalData row = 1;
+}
+
+message Router {
+    repeated RowRoutesInternalData routes_internal_data = 1;
+}
+
+message Settings {
+    double bus_wait_time = 1;
+    double bus_velocity = 2;
+}
+
+message TransportRouter {
+    Settings settings = 1;
+    graph_proto.Graph graph = 2;
+    Router router = 3;
+}
