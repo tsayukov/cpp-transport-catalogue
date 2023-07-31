@@ -344,7 +344,7 @@ void Serializer::Serialize(SentData sent_data) const {
     return settings;
 }
 
-[[nodiscard]] router::TransportRouter::Item GetWeight(const graph_proto::Weight& proto_weight) {
+[[nodiscard]] router::TransportRouter::Item GetItem(const graph_proto::Weight& proto_weight) {
     router::TransportRouter::Item item;
     switch (proto_weight.weight_case()) {
         case graph_proto::Weight::kCombineItem: {
@@ -380,7 +380,7 @@ void Serializer::Serialize(SentData sent_data) const {
 [[nodiscard]] auto GetGraph(const graph_proto::Graph& proto_graph) {
     graph::DirectedWeightedGraph<router::TransportRouter::Item> graph(proto_graph.incidence_lists_size());
     for (const auto& proto_edge : proto_graph.edges()) {
-        graph.AddEdge({proto_edge.from(), proto_edge.to(), GetWeight(proto_edge.weight())});
+        graph.AddEdge({proto_edge.from(), proto_edge.to(), GetItem(proto_edge.weight())});
     }
     return graph;
 }
@@ -400,7 +400,7 @@ void Serializer::Serialize(SentData sent_data) const {
             std::optional<RouteInternalData> route_internal_data;
             if (proto_route_internal_data.has_weight()) {
 
-                route_internal_data.emplace(RouteInternalData{GetWeight(proto_route_internal_data.weight()), std::nullopt});
+                route_internal_data.emplace(RouteInternalData{GetItem(proto_route_internal_data.weight()), std::nullopt});
                 if (proto_route_internal_data.has_previous_edge()) {
                     route_internal_data->prev_edge = proto_route_internal_data.previous_edge().edge_id();
                 }
