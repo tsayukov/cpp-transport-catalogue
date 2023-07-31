@@ -8,6 +8,7 @@
 #include <iterator>
 #include <optional>
 #include <stdexcept>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -22,6 +23,17 @@ private:
 public:
     explicit Router(const Graph& graph);
 
+    struct RouteInternalData {
+        Weight weight;
+        std::optional<EdgeId> prev_edge;
+    };
+    using RoutesInternalData = std::vector<std::vector<std::optional<RouteInternalData>>>;
+
+    Router(const Graph& graph, RoutesInternalData routes_internal_data_);
+
+    const RoutesInternalData& GetRoutesInternalData() const noexcept;
+    RoutesInternalData&& ReleaseRoutesInternalData() noexcept;
+
     struct RouteInfo {
         Weight weight;
         std::vector<EdgeId> edges;
@@ -30,12 +42,6 @@ public:
     std::optional<RouteInfo> BuildRoute(VertexId from, VertexId to) const;
 
 private:
-    struct RouteInternalData {
-        Weight weight;
-        std::optional<EdgeId> prev_edge;
-    };
-    using RoutesInternalData = std::vector<std::vector<std::optional<RouteInternalData>>>;
-
     void InitializeRoutesInternalData(const Graph& graph) {
         const size_t vertex_count = graph.GetVertexCount();
         for (VertexId vertex = 0; vertex < vertex_count; ++vertex) {
@@ -82,16 +88,51 @@ private:
 
 template<typename Weight>
 Router<Weight>::Router(const Graph& graph)
-    : graph_(graph)
-    , routes_internal_data_(graph.GetVertexCount(),
-                            std::vector<std::optional<RouteInternalData>>(graph.GetVertexCount()))
-{
+        : graph_(graph)
+        , routes_internal_data_(graph.GetVertexCount(),
+                                std::vector<std::optional<RouteInternalData>>(graph.GetVertexCount())) {
     InitializeRoutesInternalData(graph);
 
     const size_t vertex_count = graph.GetVertexCount();
     for (VertexId vertex_through = 0; vertex_through < vertex_count; ++vertex_through) {
         RelaxRoutesInternalDataThroughVertex(vertex_count, vertex_through);
     }
+}
+
+template<typename Weight>
+Router<Weight>::Router(const Graph& graph, RoutesInternalData routes_internal_data)
+        : graph_(graph)
+        , routes_internal_data_(std::move(routes_internal_data)) {
+//    Router router(graph);
+//    const auto size = router.GetRoutesInternalData().size();
+//    assert(routes_internal_data_.size() == size);
+//    assert(std::all_of(routes_internal_data_.cbegin(), routes_internal_data_.cend(),
+//                       [size](const auto& row) { return row.size() == size; }));
+//
+//
+//    for (size_t i = 0; i < size; ++i) {
+//        for (size_t j = 0; j < size; ++j) {
+//            const auto& ox = router.GetRoutesInternalData()[i][j];
+//            const auto& oy = routes_internal_data_[i][j];
+//            if (ox.has_value() && oy.has_value()) {
+//                const auto& x = ox.value();
+//                const auto& y = oy.value();
+//                assert(x.weight == y.weight && x.prev_edge == y.prev_edge);
+//            } else if (ox.has_value() ^ oy.has_value()) {
+//                assert(false);
+//            }
+//        }
+//    }
+}
+
+template<typename Weight>
+const typename Router<Weight>::RoutesInternalData& Router<Weight>::GetRoutesInternalData() const noexcept {
+    return routes_internal_data_;
+}
+
+template<typename Weight>
+typename Router<Weight>::RoutesInternalData&& Router<Weight>::ReleaseRoutesInternalData() noexcept {
+    return std::move(routes_internal_data_);
 }
 
 template<typename Weight>
