@@ -74,6 +74,10 @@ TransportCatalogue::BusRange TransportCatalogue::GetAllBuses() const noexcept {
     return ranges::AsConstRange(buses_);
 }
 
+TransportCatalogue::DistanceRange TransportCatalogue::GetDistances() const noexcept {
+    return ranges::AsConstRange(distances_);
+}
+
 // Statistics
 
 std::optional<const TransportCatalogue::StopInfo*> TransportCatalogue::GetStopInfo(std::string_view stop_name) const {

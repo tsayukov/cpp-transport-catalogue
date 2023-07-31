@@ -19,8 +19,14 @@ namespace transport_catalogue {
 
 class TransportCatalogue final {
 private:
+    struct StopPtrPairHasher {
+        std::size_t operator()(std::pair<StopPtr, StopPtr> stops) const noexcept;
+    };
+
     using StopIterator = typename std::deque<Stop>::const_iterator;
     using BusIterator = typename std::deque<Bus>::const_iterator;
+    using DistanceIterator = typename std::unordered_map<
+            std::pair<StopPtr, StopPtr>, geo::Meter, StopPtrPairHasher>::const_iterator;
 
 public:
     void AddStop(Stop stop);
@@ -37,9 +43,11 @@ public:
 
     using StopRange = ranges::ConstRange<StopIterator>;
     using BusRange = ranges::ConstRange<BusIterator>;
+    using DistanceRange = ranges::ConstRange<DistanceIterator>;
 
     [[nodiscard]] StopRange GetAllStops() const noexcept;
     [[nodiscard]] BusRange GetAllBuses() const noexcept;
+    [[nodiscard]] DistanceRange GetDistances() const noexcept;
 
     // Statistics
 
@@ -89,10 +97,6 @@ private:
     // Distance
 
     BusInfo::Length ComputeFullRouteDistance(const Bus& bus) const;
-
-    struct StopPtrPairHasher {
-        std::size_t operator()(std::pair<StopPtr, StopPtr> stops) const noexcept;
-    };
 
     mutable std::unordered_map<std::pair<StopPtr, StopPtr>, geo::Meter, StopPtrPairHasher> distances_;
 
