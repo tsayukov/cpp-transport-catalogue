@@ -69,8 +69,8 @@ const PrintDriver& GetTextPrintDriver(std::ostream& output) {
     return driver;
 }
 
-void ProcessQueries(from::Parser::Result parse_result, queries::Handler& handler, Text, std::ostream& output) {
-    const Printer printer(GetTextPrintDriver(output));
+void ProcessQueries(from::Parser::Result parse_result, queries::Handler& handler, into::Text text) {
+    const Printer printer(GetTextPrintDriver(text.output));
     parse_result.ProcessModifyQueries(handler, printer);
     parse_result.ProcessResponseQueries(handler, printer);
 }

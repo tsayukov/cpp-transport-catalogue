@@ -105,12 +105,12 @@ private:
     }
 };
 
-Parser::Result ReadQueries(from::Cli, std::istream& input) {
+Parser::Result ReadQueries(from::Cli from) {
     unsigned int query_count;
-    input >> query_count >> std::ws;
+    from.input >> query_count >> std::ws;
 
     CliParser parser;
-    for (std::string line; query_count > 0 && getline(input, line); query_count -= 1) {
+    for (std::string line; query_count > 0 && getline(from.input, line); query_count -= 1) {
         parser.Parse(line);
     }
     return parser.ReleaseResult();

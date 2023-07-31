@@ -6,9 +6,10 @@
 
 namespace transport_catalogue::from {
 
-struct Cli {};
-inline constexpr Cli cli = Cli{};
+struct Cli {
+    std::istream& input;
+};
 
-[[nodiscard]] Parser::Result ReadQueries(from::Cli, std::istream& input);
+[[nodiscard]] Parser::Result ReadQueries(from::Cli from);
 
 } // namespace transport_catalogue::from
