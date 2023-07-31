@@ -4,24 +4,28 @@
 #pragma once
 
 #include "queries.h"
+#include "svg.h"
+#include "json.h"
 
 namespace transport_catalogue {
 
 namespace from {
 
-class Json {};
-inline constexpr Json json = Json{};
+struct Json {
+    std::istream& input;
+};
 
-[[nodiscard]] Parser::Result ReadQueries(from::Json, std::istream& input);
+[[nodiscard]] Parser::Result ReadQueries(from::Json from);
 
 } // namespace from
 
 namespace into {
 
-class Json {};
-inline constexpr Json json = Json{};
+struct Json {
+    std::ostream& output;
+};
 
-void ProcessQueries(from::Parser::Result parse_result, queries::Handler& handler, Json, std::ostream& output);
+void ProcessQueries(from::Parser::Result parse_result, queries::Handler& handler, into::Json into);
 
 } // namespace into
 

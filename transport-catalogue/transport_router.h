@@ -49,12 +49,6 @@ struct Settings {
 
 class TransportRouter final {
 public:
-    void Initialize(Settings settings);
-
-    void InitializeRouter(const TransportCatalogue& database);
-
-    [[nodiscard]] bool IsInitialized() const noexcept;
-
     struct CombineItem {
         constexpr CombineItem() = default;
 
@@ -63,12 +57,10 @@ public:
 
     struct WaitItem {
         Minute time;
-        StopPtr stop_ptr = nullptr;
     };
 
     struct BusItem {
         Minute time;
-        BusPtr bus_ptr = nullptr;
         unsigned int span_count = 0;
     };
 
@@ -82,6 +74,8 @@ public:
         bool operator<(const Item& rhs) const;
         bool operator>(const Item& rhs) const;
 
+        bool operator==(const Item& rhs) const;
+
         [[nodiscard]] Minute GetTime() const;
 
         [[nodiscard]] bool IsWaitItem() const noexcept;
@@ -91,50 +85,84 @@ public:
         [[nodiscard]] const BusItem& GetBusItem() const;
     };
 
-    struct Result {
-        Minute total_time;
-        std::vector<Item> items;
+    void Initialize(Settings settings);
+
+    [[nodiscard]] std::optional<Settings> GetSettings() const noexcept;
+
+    void InitializeRouter(const TransportCatalogue& database);
+    void InitializeRouter(const TransportCatalogue& database,
+                          graph::DirectedWeightedGraph<Item> graph,
+                          graph::Router<Item>::RoutesInternalData routes_internal_data);
+
+    void ReplaceBy(TransportRouter&& other);
+
+    [[nodiscard]] std::optional<std::reference_wrapper<const graph::Router<Item>>> GetRouter() const;
+
+    [[nodiscard]] const graph::DirectedWeightedGraph<Item>& GetGraph() const;
+
+    [[nodiscard]] bool IsInitialized() const noexcept;
+
+    class Result {
+    private:
+        using Iterator = decltype(std::declval<graph::Router<Item>::RouteInfo>().edges.cbegin());
+    public:
+        [[nodiscard]] /* implicit */ operator bool() const noexcept;
+
+        [[nodiscard]] Iterator begin() const;
+        [[nodiscard]] Iterator end() const;
+
+        [[nodiscard]] Minute GetTotalTime() const;
+        [[nodiscard]] graph::VertexId GetVertexId(graph::EdgeId edge_id) const;
+        [[nodiscard]] Item GetItem(graph::EdgeId edge_id) const;
+        [[nodiscard]] const Stop& GetStopBy(graph::VertexId vertex_id) const;
+        [[nodiscard]] const Bus& GetBusBy(graph::EdgeId edge_id) const;
+    private:
+        friend TransportRouter;
+        explicit Result(std::optional<graph::Router<Item>::RouteInfo> route_info, const TransportRouter& router);
+
+        std::optional<graph::Router<Item>::RouteInfo> route_info_;
+        const TransportRouter& router_;
     };
 
-    [[nodiscard]] std::optional<Result> GetRouteBetweenStops(StopPtr from_ptr, StopPtr to_ptr) const;
+    [[nodiscard]] Result GetRouteBetweenStops(StopPtr from_ptr, StopPtr to_ptr) const;
 
 private:
     std::optional<Settings> settings_;
     graph::DirectedWeightedGraph<Item> graph_;
     std::optional<graph::Router<Item>> router_;
 
-    std::vector<StopPtr> vertex_to_stop_;
-    std::unordered_map<StopPtr, graph::VertexId> stop_to_start_waiting_vertex_;
+    struct Indices {
+        std::unordered_map<graph::EdgeId, BusPtr> edge_id_to_bus_;
+        std::vector<StopPtr> vertex_id_to_stop_;
+        std::unordered_map<StopPtr, graph::VertexId> stop_to_start_waiting_vertex_;
+    };
+
+    Indices indices_;
 
     [[nodiscard]] graph::VertexId GetStartWaitingVertexId(StopPtr stop_ptr) const;
-
     [[nodiscard]] graph::VertexId GetStartDrivingVertexId(StopPtr stop_ptr) const;
 
     template<typename StopContainer, typename DistanceGetter>
-    void AddEdges(BusPtr bus_ptr, const StopContainer& stops, const DistanceGetter& distance_getter);
-
-    [[nodiscard]] Result TransformRouteInfoToResult(const graph::Router<Item>::RouteInfo& route_info) const;
-};
-
-template<typename StopContainer, typename DistanceGetter>
-void TransportRouter::AddEdges(BusPtr bus_ptr, const StopContainer& stops, const DistanceGetter& distance_getter) {
-    static_assert(std::is_same_v<typename StopContainer::value_type, StopPtr>);
-
-    unsigned int drop_count = 1;
-    for (StopPtr stop_ptr : stops) {
-        geo::Meter distance_acc;
-        StopPtr from_stop_ptr = stop_ptr;
-        unsigned int span_count = 0;
-        for (StopPtr to_stop_ptr : ranges::Drop(stops, drop_count)) {
-            distance_acc += distance_getter(from_stop_ptr->name, to_stop_ptr->name);
-            const auto total_time = Minute::ComputeTime(distance_acc, settings_->bus_velocity);
-            span_count += 1;
-            graph_.AddEdge({GetStartDrivingVertexId(stop_ptr), GetStartWaitingVertexId(to_stop_ptr),
-                            BusItem{total_time, bus_ptr, span_count}});
-            from_stop_ptr = to_stop_ptr;
+    void AddEdges(BusPtr bus_ptr, const StopContainer& stops, const DistanceGetter& distance_getter) {
+        unsigned int drop_count = 1;
+        for (StopPtr stop_ptr : stops) {
+            geo::Meter distance_acc;
+            StopPtr from_stop_ptr = stop_ptr;
+            unsigned int span_count = 0;
+            for (StopPtr to_stop_ptr : ranges::Drop(stops, drop_count)) {
+                distance_acc += distance_getter(from_stop_ptr->name, to_stop_ptr->name);
+                const auto total_time = Minute::ComputeTime(distance_acc, settings_->bus_velocity);
+                span_count += 1;
+                const auto edge_id = graph_.AddEdge(
+                        {GetStartDrivingVertexId(stop_ptr),
+                         GetStartWaitingVertexId(to_stop_ptr),
+                         BusItem{total_time, span_count}});
+                indices_.edge_id_to_bus_.emplace(edge_id, bus_ptr);
+                from_stop_ptr = to_stop_ptr;
+            }
+            drop_count += 1;
         }
-        drop_count += 1;
     }
-}
+};
 
 } // namespace transport_catalogue::router

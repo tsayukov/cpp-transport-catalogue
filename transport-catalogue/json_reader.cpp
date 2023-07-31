@@ -2,8 +2,6 @@
 
 #include "geo.h"
 #include "domain.h"
-#include "svg.h"
-#include "json.h"
 #include "json_builder.h"
 #include "map_renderer.h"
 #include "transport_router.h"
@@ -27,16 +25,17 @@ using namespace std::string_view_literals;
 class JsonParser : public Parser {
 public:
     JsonParser()
-            : object_getters_({{"name"sv,              &JsonParser::GetName},
-                               {"id"sv,                &JsonParser::GetId},
-                               {"coordinates"sv,       &JsonParser::GetCoordinates},
-                               {"distances"sv,         &JsonParser::GetDistances},
-                               {"stop_names"sv,        &JsonParser::GetStopNames},
-                               {"route_type"sv,        &JsonParser::GetRouteType},
-                               {"renderer_settings"sv, &JsonParser::GetRendererSettings},
-                               {"router_settings"sv,   &JsonParser::GetRouterSettings},
-                               {"from"sv,              &JsonParser::GetStartStopName},
-                               {"to"sv,                &JsonParser::GetEndStopName}}) {
+            : object_getters_({{"name"sv,                   &JsonParser::GetName},
+                               {"id"sv,                     &JsonParser::GetId},
+                               {"coordinates"sv,            &JsonParser::GetCoordinates},
+                               {"distances"sv,              &JsonParser::GetDistances},
+                               {"stop_names"sv,             &JsonParser::GetStopNames},
+                               {"route_type"sv,             &JsonParser::GetRouteType},
+                               {"renderer_settings"sv,      &JsonParser::GetRendererSettings},
+                               {"router_settings"sv,        &JsonParser::GetRouterSettings},
+                               {"serialization_settings"sv, &JsonParser::GetSerializationSettings},
+                               {"from"sv,                   &JsonParser::GetStartStopName},
+                               {"to"sv,                     &JsonParser::GetEndStopName}}) {
     }
 
     void Parse(const json::Document& document) {
@@ -89,6 +88,8 @@ private:
             return typeid(renderer::Settings);
         } else if (request_type == "routing_settings"s) {
             return typeid(router::Settings);
+        } else if (request_type == "serialization_settings"s) {
+            return typeid(serialization::Settings);
         }
         throw std::invalid_argument("No such request type '"s + std::string(request_type) + "'"s);
     }
@@ -99,7 +100,8 @@ private:
     }
 
     [[nodiscard]] std::any GetName() const {
-        return current_node_->AsDict().at("name"s).AsString();
+        std::string name = current_node_->AsDict().at("name"s).AsString();
+        return std::make_any<std::string>(std::move(name));
     }
 
     [[nodiscard]] std::any GetId() const {
@@ -122,7 +124,7 @@ private:
             const auto distance = geo::Meter{node.AsDouble()};
             distances.emplace(to_stop_name, distance);
         }
-        return distances;
+        return std::make_any<decltype(distances)>(std::move(distances));
     }
 
     [[nodiscard]] std::any GetStopNames() const {
@@ -134,7 +136,7 @@ private:
             const auto& stop_name = node.AsString();
             stop_names.emplace_back(stop_name);
         }
-        return stop_names;
+        return std::make_any<decltype(stop_names)>(std::move(stop_names));
     }
 
     [[nodiscard]] std::any GetRouteType() const {
@@ -202,7 +204,7 @@ private:
         return std::make_any<renderer::Settings>(std::move(rs));
     }
 
-    [[nodiscard]] static svg::color::Color ParseColor(const json::Node& node) {
+    static svg::color::Color ParseColor(const json::Node& node) {
         if (node.IsString()) {
             return node.AsString();
         } else if (node.IsArray()) {
@@ -257,18 +259,27 @@ private:
         return rs;
     }
 
+    [[nodiscard]] std::any GetSerializationSettings() const {
+        const auto& dict = current_node_->AsDict();
+        serialization::Settings ss;
+        ss.file = dict.at("file"s).AsString();
+        return std::make_any<decltype(ss)>(std::move(ss));
+    }
+
     [[nodiscard]] std::any GetStartStopName() const {
-        return current_node_->AsDict().at("from"s).AsString();
+        std::string stop_name = current_node_->AsDict().at("from"s).AsString();
+        return std::make_any<std::string>(std::move(stop_name));
     }
 
     [[nodiscard]] std::any GetEndStopName() const {
-        return current_node_->AsDict().at("to"s).AsString();
+        std::string stop_name = current_node_->AsDict().at("to"s).AsString();
+        return std::make_any<std::string>(std::move(stop_name));
     }
 };
 
-[[nodiscard]] Parser::Result ReadQueries(from::Json, std::istream& input) {
+[[nodiscard]] Parser::Result ReadQueries(from::Json from) {
     JsonParser parser;
-    parser.Parse(json::Load(input));
+    parser.Parse(json::Load(from.input));
     return parser.ReleaseResult();
 }
 
@@ -345,39 +356,41 @@ json::Node SvgAsJson(int id, const svg::Document& document) {
         .Build();
 }
 
-json::Node RouteAsJson(int id, queries::Handler::RouteResult route_result) {
+json::Node RouteAsJson(int id, const queries::Handler::RouteResult& route_result) {
     auto builder = json::Builder{};
     auto dict_builder = builder
             .StartDict()
                 .Key("request_id"s).Value(id);
 
-    if (!route_result.has_value()) {
+    if (!route_result) {
         return dict_builder
                     .Key("error_message"s).Value("not found"s)
                 .EndDict()
                 .Build();
     }
 
-    const auto& result_items = route_result->items;
     json::Array items;
-    items.reserve(result_items.size());
-    for (const auto& item : result_items) {
+    items.reserve(std::distance(route_result.begin(), route_result.end()));
+    for (const auto edge_id : route_result) {
         json::Node item_node;
+        const auto& item = route_result.GetItem(edge_id);
         if (item.IsWaitItem()) {
             const auto& wait_item = item.GetWaitItem();
+            const std::string& stop_name = route_result.GetStopBy(route_result.GetVertexId(edge_id)).name;
             item_node = json::Builder{}
                     .StartDict()
                         .Key("type"s).Value("Wait"s)
-                        .Key("stop_name"s).Value(std::string(wait_item.stop_ptr->name))
+                        .Key("stop_name"s).Value(stop_name)
                         .Key("time"s).Value(wait_item.time.Get())
                     .EndDict()
                     .Build();
         } else if (item.IsBusItem()) {
             const auto& bus_item = item.GetBusItem();
+            const std::string& bus_name = route_result.GetBusBy(edge_id).name;
             item_node = json::Builder{}
                     .StartDict()
                         .Key("type"s).Value("Bus"s)
-                        .Key("bus"s).Value(std::string(bus_item.bus_ptr->name))
+                        .Key("bus"s).Value(bus_name)
                         .Key("span_count"s).Value(static_cast<int>(bus_item.span_count))
                         .Key("time"s).Value(bus_item.time.Get())
                     .EndDict()
@@ -387,7 +400,7 @@ json::Node RouteAsJson(int id, queries::Handler::RouteResult route_result) {
     }
 
     return dict_builder
-                .Key("total_time"s).Value(route_result->total_time.Get())
+                .Key("total_time"s).Value(route_result.GetTotalTime().Get())
                 .Key("items"s).Value(std::move(items))
             .EndDict()
             .Build();
@@ -401,7 +414,7 @@ public:
     }
 
     void Flush() const override {
-        json::Print(json::Document(json::Node(std::move(array_))), output);
+        json::Print(json::Document(json::Node(std::move(array_))), GetOutput());
     }
 
     void Initialize() {
@@ -432,8 +445,8 @@ private:
     mutable json::Array array_;
 };
 
-void ProcessQueries(from::Parser::Result parse_result, queries::Handler& handler, Json, std::ostream& output) {
-    static const JsonPrintDriver driver(output);
+void ProcessQueries(from::Parser::Result parse_result, queries::Handler& handler, into::Json into) {
+    static const JsonPrintDriver driver(into.output);
     const Printer printer(driver);
     parse_result.ProcessModifyQueries(handler, printer);
     parse_result.ProcessResponseQueries(handler, printer);
