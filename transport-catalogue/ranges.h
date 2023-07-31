@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <iterator>
 #include <tuple>
 #include <type_traits>
@@ -35,6 +36,12 @@ public:
     constexpr ConstRange(Range<Iter> other) noexcept(std::is_nothrow_copy_constructible_v<Iter>)
             : Range<Iter>(other) {
     }
+
+    template<typename Container>
+    constexpr /* implicit */ ConstRange(const Container& container)
+            noexcept(noexcept(Range<Iter>(container.begin(), container.end())))
+            : Range<Iter>(container.begin(), container.end()) {
+    }
 };
 
 template<typename Iter>
@@ -55,6 +62,12 @@ public:
 
     Range(ConstRange<Iter>) = delete;
 
+    template<typename Container>
+    constexpr /* implicit */ Range(Container& container)
+            noexcept(noexcept(Range<Iter>(container.begin(), container.end())))
+            : Range<Iter>(container.begin(), container.end()) {
+    }
+
     constexpr Iter begin() const noexcept(std::is_nothrow_copy_constructible_v<Iter>) {
         return first;
     }
@@ -64,13 +77,14 @@ public:
     }
 };
 
-template<typename C>
-constexpr auto AsConstRange(const C& container) noexcept(noexcept(ConstRange(container.begin(), container.end()))) {
+template<typename Container>
+constexpr auto AsConstRange(const Container& container)
+        noexcept(noexcept(ConstRange(container.begin(), container.end()))) {
     return ConstRange(container.begin(), container.end());
 }
 
-template<typename C>
-auto Reverse(const C& container) {
+template<typename Container>
+auto Reverse(const Container& container) {
     return ConstRange(container.rbegin(), container.rend());
 }
 
@@ -196,8 +210,8 @@ private:
     SecondIter second_;
 };
 
-template<typename C1, typename C2>
-auto Zip(const C1& first_container, const C2& second_container) {
+template<typename FirstContainer, typename SecondContainer>
+auto Zip(const FirstContainer& first_container, const SecondContainer& second_container) {
     const auto first_distance = std::distance(first_container.begin(), first_container.end());
     const auto second_distance = std::distance(second_container.begin(), second_container.end());
     const auto distance = std::min(first_distance, second_distance);
@@ -212,14 +226,14 @@ auto Zip(const C1& first_container, const C2& second_container) {
                       ZipIterator{first_range_end, second_range_end}};
 }
 
-template<typename C>
-auto Drop(const C& container, unsigned int drop_count) {
-    using IterCategory = typename std::iterator_traits<typename C::const_iterator>::iterator_category;
+template<typename Container>
+auto Drop(const Container& container, unsigned int drop_count) {
+    using IterCategory = typename std::iterator_traits<typename Container::const_iterator>::iterator_category;
 
     auto range_begin = container.begin();
     auto range_end = container.end();
     if constexpr (!std::is_same_v<IterCategory, std::random_access_iterator_tag>) {
-        for (auto _ : Indices(drop_count)) {
+        for ([[maybe_unused]] auto _ : Indices(drop_count)) {
             if (range_begin == range_end) {
                 break;
             }

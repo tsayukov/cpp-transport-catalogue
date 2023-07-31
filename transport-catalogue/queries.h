@@ -18,8 +18,6 @@ class PrintDriver {
 public:
     using PrintOperation = std::function<void(std::ostream&, const void*)>;
 
-    std::ostream& output;
-
     explicit PrintDriver(std::ostream& output) noexcept;
 
     virtual ~PrintDriver() = default;
@@ -33,10 +31,16 @@ public:
     template<typename T>
     void Print(const T& value) const {
         const auto type = std::type_index(typeid(std::decay_t<T>));
-        type_to_print_operation_.at(type)(output, &value);
+        PrintObject(type, &value);
     }
 
+protected:
+    std::ostream& GetOutput() const;
+
 private:
+    virtual void PrintObject(std::type_index type, const void* object) const;
+
+    std::ostream& output_;
     std::unordered_map<std::type_index, PrintOperation> type_to_print_operation_;
 };
 
@@ -89,6 +93,7 @@ public:
         using Queries = std::vector<std::unique_ptr<queries::Query>>;
 
         Queries modify_queries_;
+        Queries setup_queries_;
         Queries response_queries_;
     };
 

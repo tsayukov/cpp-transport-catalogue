@@ -12,6 +12,14 @@ Handler::Handler(TransportCatalogue& database,
         , router_(router) {
 }
 
+Handler::Result::operator bool() const noexcept {
+    return std::holds_alternative<std::monostate>(*this);
+}
+
+bool Handler::Result::IsIncorrectMode() const noexcept {
+    return std::holds_alternative<Error>(*this) && std::get<Error>(*this) == Error::IncorrectMode;
+}
+
 // Transport Catalogue methods adapters
 
 void Handler::AddStop(Stop stop) {
@@ -72,11 +80,36 @@ void Handler::InitializeRouterSettings(router::Settings settings) {
     router_.Initialize(settings);
 }
 
+void Handler::InitializeRouter() {
+    router_.InitializeRouter(database_);
+}
+
 Handler::RouteResult Handler::GetRouteBetweenStops(std::string_view from, std::string_view to) {
     if (!router_.IsInitialized()) {
         router_.InitializeRouter(database_);
     }
     return router_.GetRouteBetweenStops(FindStopBy(from).value(), FindStopBy(to).value());
+}
+
+// Serialization methods adapters
+
+void Handler::InitializeSerialization(serialization::Settings settings) {
+    serializer_.Initialize(std::move(settings));
+}
+
+void Handler::Serialize() {
+    serializer_.Serialize({database_, renderer_.GetSettings(), router_});
+}
+
+void Handler::Deserialize() {
+    auto received_data = serializer_.Deserialize();
+    database_ = std::move(received_data.database);
+    if (received_data.render_settings.has_value()) {
+        InitializeMapRenderer(std::move(received_data.render_settings.value()));
+    }
+    if (received_data.transport_router.has_value()) {
+        router_.ReplaceBy(std::move(received_data.transport_router.value()));
+    }
 }
 
 } // namespace transport_catalogue::queries

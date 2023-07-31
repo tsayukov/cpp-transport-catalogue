@@ -15,10 +15,18 @@ namespace into {
 // PrintDriver
 
 PrintDriver::PrintDriver(std::ostream& output) noexcept
-        : output(output) {
+        : output_(output) {
 }
 
 void PrintDriver::Flush() const {}
+
+std::ostream& PrintDriver::GetOutput() const {
+    return output_;
+}
+
+void PrintDriver::PrintObject(std::type_index type, const void* object) const {
+    type_to_print_operation_.at(type)(GetOutput(), object);
+}
 
 // Printer
 
@@ -174,6 +182,7 @@ public:
 
     void Process(Handler& handler) const override {
         handler.InitializeRouterSettings(GetSettings());
+        handler.InitializeRouter();
     }
 
     class Factory : public QueryFactory {
@@ -181,6 +190,23 @@ public:
         [[nodiscard]] std::unique_ptr<Query> Construct(const from::Parser& parser) const override {
             return std::make_unique<TransportRouterSetup>(
                     parser.Get<router::Settings>("router_settings"sv));
+        }
+    };
+};
+
+class SerializationSetup : public SetupQuery<serialization::Settings> {
+public:
+    using SetupQuery<serialization::Settings>::SetupQuery;
+
+    void Process(Handler& handler) const override {
+        handler.InitializeSerialization(GetSettings());
+    }
+
+    class Factory : public QueryFactory {
+    public:
+        [[nodiscard]] std::unique_ptr<Query> Construct(const from::Parser& parser) const override {
+            return std::make_unique<SerializationSetup>(
+                    parser.Get<serialization::Settings>("serialization_settings"sv));
         }
     };
 };
@@ -276,6 +302,7 @@ const QueryFactory& QueryFactory::GetFactory(std::type_index index) {
     static const BusCreation::Factory bus_creation;
     static const MapRendererSetup::Factory renderer_setup;
     static const TransportRouterSetup::Factory router_setup;
+    static const SerializationSetup::Factory serialization_setup;
     static const StopInfoQuery::Factory stop_info;
     static const BusInfoQuery::Factory bus_info;
     static const MapRenderer::Factory renderer;
@@ -286,6 +313,7 @@ const QueryFactory& QueryFactory::GetFactory(std::type_index index) {
             {std::type_index(typeid(Bus)), bus_creation},
             {std::type_index(typeid(renderer::Settings)), renderer_setup},
             {std::type_index(typeid(router::Settings)), router_setup},
+            {std::type_index(typeid(serialization::Settings)), serialization_setup},
             {std::type_index(typeid(queries::Handler::StopInfo)), stop_info},
             {std::type_index(typeid(queries::Handler::BusInfo)), bus_info},
             {std::type_index(typeid(renderer::MapRenderer)), renderer},
@@ -303,9 +331,21 @@ void Parser::Result::ProcessModifyQueries(queries::Handler& handler, const into:
         query->ProcessAndPrint(handler, printer);
     }
     modify_queries_.clear();
+
+    for (const auto& query : setup_queries_) {
+        query->ProcessAndPrint(handler, printer);
+    }
+
+    if (response_queries_.empty()) {
+        handler.Serialize();
+    }
 }
 
 void Parser::Result::ProcessResponseQueries(queries::Handler& handler, const into::Printer& printer) {
+    if (modify_queries_.empty()) {
+        handler.Deserialize();
+    }
+
     for (const auto& query : response_queries_) {
         query->ProcessAndPrint(handler, printer);
     }
@@ -317,15 +357,17 @@ void Parser::Result::PushBack(std::unique_ptr<queries::Query>&& query_ptr) {
     const auto& query = *query_ptr;
     const auto& query_type = typeid(query);
     if (query_type == typeid(queries::StopCreation)
-            || query_type == typeid(queries::BusCreation)
-            || query_type == typeid(queries::MapRendererSetup)
-            || query_type == typeid(queries::TransportRouterSetup)) {
+            || query_type == typeid(queries::BusCreation)) {
         modify_queries_.push_back(std::move(query_ptr));
     } else if (query_type == typeid(queries::StopInfoQuery)
             || query_type == typeid(queries::BusInfoQuery)
             || query_type == typeid(queries::MapRenderer)
             || query_type == typeid(queries::Route)) {
         response_queries_.push_back(std::move(query_ptr));
+    } else if (query_type == typeid(queries::MapRendererSetup)
+            || query_type == typeid(queries::TransportRouterSetup)
+            || query_type == typeid(queries::SerializationSetup)) {
+        setup_queries_.push_back(std::move(query_ptr));
     } else {
         using namespace std::string_literals;
         throw std::invalid_argument("Query must be either ModifyQuery or ResponseQuery"s);
