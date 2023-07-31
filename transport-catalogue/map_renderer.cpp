@@ -64,6 +64,10 @@ void MapRenderer::Initialize(Settings settings) {
         .SetStrokeLineJoin(svg::StrokeLineJoin::ROUND);
 }
 
+std::optional<std::reference_wrapper<const Settings>> MapRenderer::GetSettings() const noexcept {
+    return settings_;
+}
+
 SphereProjector MapRenderer::MakeProjector(const std::vector<StopPtr>& sorted_active_stops) const {
     std::vector<geo::Coordinates> all_coordinates;
     all_coordinates.reserve(sorted_active_stops.size());

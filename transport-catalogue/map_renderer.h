@@ -104,6 +104,8 @@ class MapRenderer final {
 public:
     void Initialize(Settings settings);
 
+    [[nodiscard]] std::optional<std::reference_wrapper<const Settings>> GetSettings() const noexcept;
+
     template<typename BusesIter>
     [[nodiscard]] svg::Document Render(BusesIter bus_first, BusesIter bus_last) const {
         if (!settings_.has_value()) {
